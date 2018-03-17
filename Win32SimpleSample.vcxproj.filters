@@ -66,6 +66,7 @@
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="TransformDialog.cpp" />
+    <ClCompile Include="HighlightEffect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeviceResources.h">
@@ -122,6 +123,7 @@
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="TransformDialog.h" />
+    <ClInclude Include="HighlightEffect.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -147,6 +149,12 @@
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="pivot_ps.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="highlight_vs.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="highlight_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
