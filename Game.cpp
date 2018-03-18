@@ -240,10 +240,6 @@ void Game::Render()
 			// Render a second model in wireframe mode to represent the selection highlight
 			if (std::find(m_selectionIDs.cbegin(), m_selectionIDs.cend(), itModel->m_ID) != m_selectionIDs.cend())
 			{
-				// Enable wireframe mode and disable depth testing
-				context->RSSetState(m_states->Wireframe());
-				context->OMSetDepthStencilState(m_states->DepthNone(), 0);
-
 				m_selectionEffect->SetWorld(local);
 				m_selectionEffect->SetView(m_view);
 				m_selectionEffect->SetProjection(m_projection);
@@ -255,13 +251,18 @@ void Game::Render()
 				{
 					auto mesh = itMesh->get();
 					assert(mesh != 0);
-
+                    
 					for (auto pit = mesh->meshParts.cbegin(); pit != mesh->meshParts.cend(); ++pit)
 					{
 						auto part = pit->get();
 						assert(part != 0);
 
-						part->Draw(context, m_selectionEffect.get(), m_selectionEffectLayouts[i][j++].Get());
+						part->Draw(context, m_selectionEffect.get(), m_selectionEffectLayouts[i][j++].Get(),
+                                   [&]()
+                        {
+                            // TODO: Do front-face culling instead of back-face culling
+                            context->RSSetState(m_states->CullClockwise());
+                        });
 					}
 				}
 
@@ -967,10 +968,7 @@ void Game::CreateDeviceDependentResources()
 		);
 	}
 	
-	m_selectionEffect = std::make_unique<DirectX::BasicEffect>(m_deviceResources->GetD3DDevice());
-	m_selectionEffect->SetLightingEnabled(true);
-	m_selectionEffect->SetAmbientLightColor(DirectX::Colors::AliceBlue);
-	m_selectionEffect->SetLightEnabled(0, false);
+	m_selectionEffect = std::make_unique<HighlightEffect>(m_deviceResources->GetD3DDevice());
 
 	m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
 

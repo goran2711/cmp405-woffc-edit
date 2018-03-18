@@ -15,6 +15,8 @@
 #include <vector>
 #include <map>
 
+#include "HighlightEffect.h"
+
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -97,7 +99,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceState;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestState;
 
-	std::unique_ptr<DirectX::BasicEffect>									m_selectionEffect;
+	std::unique_ptr<HighlightEffect>									    m_selectionEffect;
 	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_selectionEffectLayouts;
 	std::vector<int> m_selectionIDs;
 

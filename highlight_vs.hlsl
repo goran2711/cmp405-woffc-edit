@@ -1,10 +1,9 @@
 cbuffer Matrices : register(b0)
 {
-    // row_major?
-    matrix world;
-    matrix view;
-    matrix projection;
-    matrix worldView;   // Improperly configured (DO NOT USE!)
+    row_major matrix world;
+    row_major matrix view;
+    row_major matrix projection;
+    row_major matrix worldView;   // Improperly configured (DO NOT USE!)
 };
 
 struct VSInput
@@ -21,15 +20,20 @@ struct VSOutput
     float4 position : SV_POSITION;
 };
 
-float4 main(VSInput input) : SV_Position
+VSOutput main(VSInput input)
 {
-    static const float DIST = 2.f;
+    static const float DIST = 0.02f;
 
+    // NOTE: Try transforming the normal?
+    //float4 newPosition = float4(input.position, 1.f);
     float4 newPosition = float4(input.position + (input.normal * DIST), 1.f);
 
     newPosition = mul(newPosition, world);
     newPosition = mul(newPosition, view);
     newPosition = mul(newPosition, projection);
 
-    return newPosition;
+    VSOutput output;
+    output.position = newPosition;
+
+    return output;
 }

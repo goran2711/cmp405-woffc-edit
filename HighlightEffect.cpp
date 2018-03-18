@@ -3,16 +3,11 @@
 
 
 HighlightEffect::HighlightEffect(ID3D11Device* device)
-    : m_vertexShaderBytecode(new ShaderBytecode(), [](ShaderBytecode* vertexShaderBytecode)
-{
-    if (vertexShaderBytecode->code)
-        delete[] vertexShaderBytecode->code;
-})
 {
     // Create vertex shader
-    std::vector<uint8_t> vsBlob = DX::ReadData(L"highlight_vs.cso");
+    m_vertexShaderBlob = DX::ReadData(L"highlight_vs.cso");
 
-    device->CreateVertexShader(vsBlob.data(), vsBlob.size(), nullptr, m_vertexShader.ReleaseAndGetAddressOf());
+    device->CreateVertexShader(m_vertexShaderBlob.data(), m_vertexShaderBlob.size(), nullptr, m_vertexShader.ReleaseAndGetAddressOf());
 
     // Create pixel shader
     std::vector<uint8_t> psBlob = DX::ReadData(L"highlight_ps.cso");
@@ -20,19 +15,27 @@ HighlightEffect::HighlightEffect(ID3D11Device* device)
     device->CreatePixelShader(psBlob.data(), psBlob.size(), nullptr, m_pixelShader.ReleaseAndGetAddressOf());
 
     // Store vertex shader bytecode so that it can be used to create input layouts
-    m_vertexShaderBytecode->code = new std::vector<uint8_t>(vsBlob);
-    m_vertexShaderBytecode->length = vsBlob.size();
+    m_vertexShaderBytecode.code = m_vertexShaderBlob.data();
+    m_vertexShaderBytecode.length = m_vertexShaderBlob.size();
+
+    // Create constant buffers
+    m_matrixBuffer.Create(device);
+    m_propertiesBuffer.Create(device);
 }
 
 void HighlightEffect::Apply(ID3D11DeviceContext * deviceContext)
 {
-    // TODO: Set vertex and fragment shader
+    // Set vertex and fragment shader
     deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 
-    // TODO: Set constant buffers
+    // Set constant buffers
+    m_matrixBuffer.SetData(deviceContext, m_matrices);
+
     ID3D11Buffer* matriceBuffer[] = { m_matrixBuffer.GetBuffer() };
     deviceContext->VSSetConstantBuffers(0, 1, matriceBuffer);
+
+    m_propertiesBuffer.SetData(deviceContext, { XMVectorSet(1.f, 0.f, 0.f, 1.f) });
 
     ID3D11Buffer* propertiesBuffer[] = { m_propertiesBuffer.GetBuffer() };
     deviceContext->PSSetConstantBuffers(0, 1, propertiesBuffer);
@@ -43,8 +46,8 @@ void HighlightEffect::Apply(ID3D11DeviceContext * deviceContext)
 
 void HighlightEffect::GetVertexShaderBytecode(void const ** pShaderByteCode, size_t * pByteCodeLength)
 {
-    pShaderByteCode = &m_vertexShaderBytecode->code;
-    pByteCodeLength = &m_vertexShaderBytecode->length;
+    *pShaderByteCode = m_vertexShaderBytecode.code;
+    *pByteCodeLength = m_vertexShaderBytecode.length;
 }
 
 void XM_CALLCONV HighlightEffect::SetWorld(FXMMATRIX value)

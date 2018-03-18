@@ -3,6 +3,7 @@
 #include "EffectCommon.h"
 #include "ConstantBuffer.h"
 #include <memory>
+#include <vector>
 
 // This shader will render the back-faces of a mesh using a vertex shader that performs
 // vertex manipulation by extruding them along their normal, and a simple flat pixel shader
@@ -40,7 +41,8 @@ private:
     // NOTE: This one has some EffectDirtyFlags business I'm don't fully comprehend yet--might want to look into it
     EffectMatrices m_matrices;
     
-    std::unique_ptr<ShaderBytecode, void(*)(ShaderBytecode*)> m_vertexShaderBytecode;
+    std::vector<uint8_t> m_vertexShaderBlob;
+    ShaderBytecode m_vertexShaderBytecode;
 
     // GPU resources
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
