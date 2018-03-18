@@ -103,7 +103,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestState;
 
 	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
-	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;
+	std::map<std::wstring, std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;
 	std::vector<int> m_selectionIDs;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>						m_selectionBoxTexture;

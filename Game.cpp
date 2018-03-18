@@ -188,6 +188,7 @@ void Game::Update(DX::StepTimer const& timer)
 
 void Game::PostProcess(ID3D11DeviceContext* context)
 {
+    // Selection highlighting
     if (!m_selectionIDs.empty())
     {
         D3D11_VIEWPORT viewport = m_deviceResources->GetScreenViewport();
@@ -297,7 +298,7 @@ void Game::Render()
                         auto part = pit->get();
                         assert(part != 0);
 
-                        part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[i][j++].Get(), [&]
+                        part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[mesh->name][j++].Get(), [&]
                         {
                             // Custom DSS so the mesh will be rendered to the stencil buffer also
                             context->OMSetDepthStencilState(m_stencilReplaceState.Get(), 1);
@@ -586,99 +587,17 @@ void Game::OnWindowSizeChanged(int width, int height)
 
 void Game::BuildDisplayList(std::vector<SceneObject> * SceneGraph)
 {
-	auto device = m_deviceResources->GetD3DDevice();
-	auto devicecontext = m_deviceResources->GetD3DDeviceContext();
+    using namespace std::placeholders;
 
-	if (!m_displayList.empty())		//is the vector empty
-	{
-		m_displayList.clear();		//if not, empty it
-	}
+    // clear out any old data if this is a rebuild
+    if (!m_displayList.empty())
+    {
+        m_displayList.clear();
+        m_highlightEffectLayouts.clear();
+    }
 
-	//for every item in the scenegraph
-	int numObjects = SceneGraph->size();
-	for (int i = 0; i < numObjects; i++)
-	{
-
-		//create a temp display object that we will populate then append to the display list.
-		DisplayObject newDisplayObject;
-
-		newDisplayObject.m_ID = SceneGraph->at(i).ID;
-
-		//load model
-		std::wstring modelwstr = StringToWCHART(SceneGraph->at(i).model_path);							//convect string to Wchar
-		newDisplayObject.m_model = Model::CreateFromCMO(device, modelwstr.c_str(), *m_fxFactory, true);	//get DXSDK to load model "False" for LH coordinate system (maya)
-
-		//Load Texture
-		std::wstring texturewstr = StringToWCHART(SceneGraph->at(i).tex_diffuse_path);								//convect string to Wchar
-		HRESULT rs;
-		rs = CreateDDSTextureFromFile(device, texturewstr.c_str(), nullptr, &newDisplayObject.m_texture_diffuse);	//load tex into Shader resource
-
-		//if texture fails.  load error default
-		if (rs)
-		{
-			CreateDDSTextureFromFile(device, L"database/data/Error.dds", nullptr, &newDisplayObject.m_texture_diffuse);	//load tex into Shader resource
-		}
-
-		//apply new texture to models effect
-		newDisplayObject.m_model->UpdateEffects([&](IEffect* effect) //This uses a Lambda function,  if you dont understand it: Look it up.
-		{
-			auto lights = dynamic_cast<BasicEffect*>(effect);
-			if (lights)
-			{
-				lights->SetTexture(newDisplayObject.m_texture_diffuse);
-			}
-		});
-
-		//set position
-		newDisplayObject.m_position.x = SceneGraph->at(i).posX;
-		newDisplayObject.m_position.y = SceneGraph->at(i).posY;
-		newDisplayObject.m_position.z = SceneGraph->at(i).posZ;
-
-		//setorientation
-		newDisplayObject.m_orientation.x = SceneGraph->at(i).rotX;
-		newDisplayObject.m_orientation.y = SceneGraph->at(i).rotY;
-		newDisplayObject.m_orientation.z = SceneGraph->at(i).rotZ;
-
-		//set scale
-		newDisplayObject.m_scale.x = SceneGraph->at(i).scaX;
-		newDisplayObject.m_scale.y = SceneGraph->at(i).scaY;
-		newDisplayObject.m_scale.z = SceneGraph->at(i).scaZ;
-
-		//set wireframe / render flags
-		newDisplayObject.m_render = SceneGraph->at(i).editor_render;
-		newDisplayObject.m_wireframe = SceneGraph->at(i).editor_wireframe;
-
-		m_displayList.push_back(newDisplayObject);
-
-	}
-
-	int i = 0;
-	m_highlightEffectLayouts.resize(m_displayList.size());
-	for (auto moit = m_displayList.cbegin(); moit != m_displayList.cend(); ++moit)
-	{
-		auto model = moit->m_model;
-
-		for (auto mit = model->meshes.cbegin(); mit != model->meshes.cend(); ++mit)
-		{
-			auto mesh = mit->get();
-			assert(mesh != 0);
-
-			for (auto it = mesh->meshParts.cbegin(); it != mesh->meshParts.cend(); ++it)
-			{
-				auto part = it->get();
-				assert(part != 0);
-
-				Microsoft::WRL::ComPtr<ID3D11InputLayout> il;
-				part->CreateInputLayout(m_deviceResources->GetD3DDevice(), m_highlightEffect.get(), il.GetAddressOf());
-
-				// Add part input layout for the model
-				m_highlightEffectLayouts[i].emplace_back(il);
-			}
-		}
-
-		// Next model
-		++i;
-	}
+	// Create a visual representation of every scene object
+    std::for_each(SceneGraph->cbegin(), SceneGraph->cend(), std::bind(&Game::AddDisplayListItem, this, _1));
 }
 
 void Game::BuildDisplayChunk(ChunkObject * SceneChunk)
@@ -730,6 +649,25 @@ bool Game::AddDisplayListItem(const SceneObject & sceneObject)
             lights->SetTexture(newDisplayObject.m_texture_diffuse);
         }
     });
+
+    // Create input layout for the selection highlight effect
+    for (auto mit = newDisplayObject.m_model->meshes.cbegin(); mit != newDisplayObject.m_model->meshes.cend(); ++mit)
+    {
+        auto mesh = mit->get();
+        assert(mesh != 0);
+
+        for (auto it = mesh->meshParts.cbegin(); it != mesh->meshParts.cend(); ++it)
+        {
+            auto part = it->get();
+            assert(part != 0);
+
+            Microsoft::WRL::ComPtr<ID3D11InputLayout> il;
+            part->CreateInputLayout(m_deviceResources->GetD3DDevice(), m_highlightEffect.get(), il.GetAddressOf());
+
+            // Add part input layout for the model
+            m_highlightEffectLayouts[mesh->name].emplace_back(il);
+        }
+    }
 
     //set position
     newDisplayObject.m_position.x = sceneObject.posX;
