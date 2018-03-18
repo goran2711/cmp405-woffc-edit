@@ -190,9 +190,10 @@ void Game::PostProcess(ID3D11DeviceContext* context)
 {
     if (!m_selectionIDs.empty())
     {
-        auto viewport = m_deviceResources->GetScreenViewport();
+        D3D11_VIEWPORT viewport = m_deviceResources->GetScreenViewport();
         RECT fullscreenRect{ 0, 0, viewport.Width, viewport.Height };
         RECT quarterRect{ 0, 0, viewport.Width / 4, viewport.Height / 4 };
+        D3D11_VIEWPORT quarterViewport{ 0, 0, quarterRect.right, quarterRect.bottom, viewport.MinDepth, viewport.MaxDepth };
 
         // Downscale highlight buffer
         context->OMSetRenderTargets(1, m_rt1RTV.GetAddressOf(), nullptr);
@@ -202,10 +203,8 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_sprites->End();
 
         // Blur highlight buffer
-        // NOTE: I _would_ use m_rt2RTV/SRV here, but for some reason BasicPostProcess only works properly on a full size back buffer
-        ID3D11ShaderResourceView* nullSRV = nullptr;
-        context->PSSetShaderResources(0, 1, &nullSRV);
-        context->OMSetRenderTargets(1, m_highlightRTV.GetAddressOf(), nullptr);
+        context->OMSetRenderTargets(1, m_rt2RTV.GetAddressOf(), nullptr);
+        context->RSSetViewports(1, &quarterViewport);
 
         m_blurPostProcess->SetEffect(BasicPostProcess::GaussianBlur_5x5);
         m_blurPostProcess->SetGaussianParameter(1.f);
@@ -216,6 +215,8 @@ void Game::PostProcess(ID3D11DeviceContext* context)
 
         // NOTE: Upscaling is done "implicitly" by applying the blurred texture on a sprite that covers the entire back-buffer
         ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
+        context->RSSetViewports(1, &viewport);
+
         context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
         // Render the blurred texture on top of the already rendered screen (with additive blending) while respecting the stencil buffer
@@ -224,7 +225,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
             // Do not blend the blurred texture with the areas occupied by a selected object
             context->OMSetDepthStencilState(m_stencilTestState.Get(), 1);
         });
-        m_sprites->Draw(m_highlightSRV.Get(), fullscreenRect);
+        m_sprites->Draw(m_rt2SRV.Get(), fullscreenRect);
         m_sprites->End();
     }
 }
