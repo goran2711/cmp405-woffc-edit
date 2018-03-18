@@ -78,12 +78,10 @@ void Game::Initialize(HWND window, int width, int height)
 	m_effect2->Play();
 	#endif
 
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
+    CD3D11_DEPTH_STENCIL_DESC dsDesc(CD3D11_DEFAULT{});
 
 	// Depth test parameters
-	dsDesc.DepthEnable = true;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+	dsDesc.DepthEnable = false; // Disable depth test when writing to the stencil buffer (outline will always show, regardless of occlusion)
 
 	// Stencil test parameters
 	dsDesc.StencilEnable = true;
@@ -104,10 +102,6 @@ void Game::Initialize(HWND window, int width, int height)
 
 	// Create depth stencil state
 	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilReplaceState.ReleaseAndGetAddressOf());
-
-	// To prevent z-fighting
-	//dsDesc.DepthEnable = false;
-	dsDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
 
 	// Stencil operations if pixel is front-facing
 	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
@@ -194,22 +188,6 @@ void Game::Update(DX::StepTimer const& timer)
 
 void Game::PostProcess(ID3D11DeviceContext* context)
 {
-    // At this point, I expect to have:
-    // 1. a texture with a black background and the selected object rendered in a flat colour
-    //    - Use rt1RTV and my HighlightShader
-    // 2. the stencil buffer will contain the selected object
-    //    - Set the stencil buffer state before rendering the selected model
-    //    - The states are set from ModelMesh::PrepareForRendering, but I can use ModelMesh::Draw to set custom state
-    //    - I do not have to render to object twice--just render the selected object mesh-by-mesh, while setting the custom state
-    // 3. the scene is rendered normally to the back buffer
-    
-
-    // TODO:
-    // 1. Blur the texture with the flat colour selected object
-    //    - Use a BasicPostProcess BloomBlur effect
-
-    // FIX: The gaussian blur kernel is only 5x5, so I need to downscale the texture before blurring it, otherwise
-    //      the blur effect will be too subtle
     if (!m_selectionIDs.empty())
     {
         auto viewport = m_deviceResources->GetScreenViewport();
@@ -220,29 +198,28 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         context->OMSetRenderTargets(1, m_rt1RTV.GetAddressOf(), nullptr);
 
         m_sprites->Begin(SpriteSortMode_Immediate);
-        m_sprites->Draw(m_sceneSRV.Get(), quarterRect);
+        m_sprites->Draw(m_highlightSRV.Get(), quarterRect);
         m_sprites->End();
 
         // Blur highlight buffer
+        // FIX: This doesn't work properly
         context->OMSetRenderTargets(1, m_rt2RTV.GetAddressOf(), nullptr);
 
         m_blurPostProcess->SetEffect(BasicPostProcess::GaussianBlur_5x5);
         m_blurPostProcess->SetGaussianParameter(1.f);
+
         // Source texture is the texture I rendered the flat representaton of the selected model(s) onto
         m_blurPostProcess->SetSourceTexture(m_rt1SRV.Get());
         m_blurPostProcess->Process(context);
 
         // NOTE: Upscaling is done "implicitly" by applying the blurred texture on a sprite that covers the entire back-buffer
-
         ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
         context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
-        // 2. Render the blurred texture to the screen while respecting the stencil buffer
-        //    - Use a SpriteBatch to render a quad
-
+        // Render the blurred texture on top of the already rendered screen (with additive blending) while respecting the stencil buffer
         m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]()
         {
-            // Only use the blurred texture when the stencil buffer != 0
+            // Do not blend the blurred texture with the areas occupied by a selected object
             context->OMSetDepthStencilState(m_stencilTestState.Get(), 1);
         });
         m_sprites->Draw(m_rt1SRV.Get(), fullscreenRect);
@@ -293,31 +270,16 @@ void Game::Render()
 
 			XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, SimpleMath::Quaternion::Identity, scale, g_XMZero, rotate, translate);
 
-            // Render non-selected object normally
-            if (std::find(m_selectionIDs.cbegin(), m_selectionIDs.cend(), itModel->m_ID) == m_selectionIDs.cend())
-			    model->Draw(context, *m_states, local, m_view, m_projection, false);	// second to last variable in draw,  make TRUE for wireframe
+            // First, render object normally
+			model->Draw(context, *m_states, local, m_view, m_projection, false);	// second to last variable in draw,  make TRUE for wireframe
+
             // Render selected objects to the stencil buffer and to a separate render target in a flat colour
-            else
+            if (std::find(m_selectionIDs.cbegin(), m_selectionIDs.cend(), itModel->m_ID) != m_selectionIDs.cend())
             {
-                // Render to stencil buffer (in addition to back buffer)
-                for (auto itMesh = model->meshes.cbegin(); itMesh != model->meshes.cend(); ++itMesh)
-                {
-                    auto mesh = *itMesh;
-                    assert(mesh != nullptr);
+                // Change render target, but use the same depth/stencil buffer
+                context->OMSetRenderTargets(1, m_highlightRTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
 
-                    mesh->Draw(context, local, m_view, m_projection, false, [&]()
-                    {
-                        context->OMSetDepthStencilState(m_stencilReplaceState.Get(), 1);
-                    });
-                }
-
-                // Render flat version to separate render target
-                context->OMSetRenderTargets(1, m_sceneRTV.GetAddressOf(), nullptr);
-
-                // WARNING: At this point, DSS has not been unset/changed from when I overrode it, and there is now no longer
-                //          a depth-stencil buffer bound--does this cause any issues?
-
-                m_selectionEffect->SetMatrices(local, m_view, m_projection);
+                m_highlightEffect->SetMatrices(local, m_view, m_projection);
 
                 int j = 0;
                 for (auto itMesh = model->meshes.cbegin(); itMesh != model->meshes.cend(); ++itMesh)
@@ -332,7 +294,11 @@ void Game::Render()
                         auto part = pit->get();
                         assert(part != 0);
 
-                        part->Draw(context, m_selectionEffect.get(), m_selectionEffectLayouts[i][j++].Get());
+                        part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[i][j++].Get(), [&]
+                        {
+                            // Custom DSS so the mesh will be rendered to the stencil buffer also
+                            context->OMSetDepthStencilState(m_stencilReplaceState.Get(), 1);
+                        });
                     }
                 }
 
@@ -340,30 +306,6 @@ void Game::Render()
                 ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
                 context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
             }
-
-			//// Render a second model in wireframe mode to represent the selection highlight
-			//if (std::find(m_selectionIDs.cbegin(), m_selectionIDs.cend(), itModel->m_ID) != m_selectionIDs.cend())
-			//{
-			//	m_selectionEffect->SetWorld(local);
-			//	m_selectionEffect->SetView(m_view);
-			//	m_selectionEffect->SetProjection(m_projection);
-
-			//	// Change effect of model to be a flat shader
-			//	// FIX: Use vertex colours to change selection highlight colour
-			//	int j = 0;
-			//	for (auto itMesh = model->meshes.cbegin(); itMesh != model->meshes.cend(); ++itMesh)
-			//	{
-			//		auto mesh = itMesh->get();
-			//		assert(mesh != 0);
-   //                 
-			//		for (auto pit = mesh->meshParts.cbegin(); pit != mesh->meshParts.cend(); ++pit)
-			//		{
-			//			auto part = pit->get();
-			//			assert(part != 0);
-
-			//			part->Draw(context, m_selectionEffect.get(), m_selectionEffectLayouts[i][j++].Get());
-			//		}
-			//	}
 
 			//	//// TODO: Geometry shader to render pivot point
 			//	//context->RSSetState(m_states->CullCounterClockwise());
@@ -444,7 +386,7 @@ void Game::Clear()
 	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	context->OMSetRenderTargets(1, &renderTarget, depthStencil);
 
-    context->ClearRenderTargetView(m_sceneRTV.Get(), Colors::Black);
+    context->ClearRenderTargetView(m_highlightRTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt1RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt2RTV.Get(), Colors::Black);
 
@@ -708,7 +650,7 @@ void Game::BuildDisplayList(std::vector<SceneObject> * SceneGraph)
 	}
 
 	int i = 0;
-	m_selectionEffectLayouts.resize(m_displayList.size());
+	m_highlightEffectLayouts.resize(m_displayList.size());
 	for (auto moit = m_displayList.cbegin(); moit != m_displayList.cend(); ++moit)
 	{
 		auto model = moit->m_model;
@@ -724,10 +666,10 @@ void Game::BuildDisplayList(std::vector<SceneObject> * SceneGraph)
 				assert(part != 0);
 
 				Microsoft::WRL::ComPtr<ID3D11InputLayout> il;
-				part->CreateInputLayout(m_deviceResources->GetD3DDevice(), m_selectionEffect.get(), il.GetAddressOf());
+				part->CreateInputLayout(m_deviceResources->GetD3DDevice(), m_highlightEffect.get(), il.GetAddressOf());
 
 				// Add part input layout for the model
-				m_selectionEffectLayouts[i].emplace_back(il);
+				m_highlightEffectLayouts[i].emplace_back(il);
 			}
 		}
 
@@ -1073,8 +1015,8 @@ void Game::CreateDeviceDependentResources()
 		);
 	}
 	
-	m_selectionEffect = std::make_unique<HighlightEffect>(m_deviceResources->GetD3DDevice());
-    m_selectionEffect->SetHighlightColour(Colors::AliceBlue);
+	m_highlightEffect = std::make_unique<HighlightEffect>(m_deviceResources->GetD3DDevice());
+    m_highlightEffect->SetHighlightColour(Colors::AliceBlue);
 
     m_blurPostProcess = std::make_unique<BasicPostProcess>(m_deviceResources->GetD3DDevice());
 
@@ -1151,7 +1093,7 @@ void Game::CreateWindowSizeDependentResources()
 	);
 
 	m_sprites->SetViewport(m_deviceResources->GetScreenViewport());
-	m_selectionEffect->SetProjection(m_projection);
+	m_highlightEffect->SetProjection(m_projection);
 	m_batchEffect->SetProjection(m_projection);
 
 	if (m_displayChunk.m_terrainEffect)
@@ -1167,8 +1109,8 @@ void Game::CreateWindowSizeDependentResources()
 
     ComPtr<ID3D11Texture2D> sceneTex;
     device->CreateTexture2D(&sceneDesc, nullptr, sceneTex.ReleaseAndGetAddressOf());
-    device->CreateRenderTargetView(sceneTex.Get(), nullptr, m_sceneRTV.ReleaseAndGetAddressOf());
-    device->CreateShaderResourceView(sceneTex.Get(), nullptr, m_sceneSRV.ReleaseAndGetAddressOf());
+    device->CreateRenderTargetView(sceneTex.Get(), nullptr, m_highlightRTV.ReleaseAndGetAddressOf());
+    device->CreateShaderResourceView(sceneTex.Get(), nullptr, m_highlightSRV.ReleaseAndGetAddressOf());
 
     // Create quarter sized render targets for use with blurring
     CD3D11_TEXTURE2D_DESC rtDesc(backBufferFormat, viewport.Width / 4, viewport.Height / 4, 1, 1, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);

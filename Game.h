@@ -102,17 +102,15 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceState;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestState;
 
-	std::unique_ptr<HighlightEffect>									    m_selectionEffect;
-	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_selectionEffectLayouts;
+	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
+	std::vector<std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;
 	std::vector<int> m_selectionIDs;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>						m_selectionBoxTexture;
 
-    //render targets and post process stuff
-    // The texture we render the scene prior to post processing
-    //Microsoft::WRL::ComPtr<ID3D11Texture2D>                                 m_sceneTex;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_sceneSRV;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_sceneRTV;
+    //// Render targets and post process stuff
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_highlightSRV;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_highlightRTV;
 
     // Intermediate render targers for post processing
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_rt1SRV;
