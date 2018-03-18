@@ -85,8 +85,8 @@ void Game::Initialize(HWND window, int width, int height)
 
 	// Stencil test parameters
 	dsDesc.StencilEnable = true;
-	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0xFF;
+	dsDesc.StencilReadMask = STENCIL_SELECTED_OBJECT;
+    dsDesc.StencilWriteMask = STENCIL_SELECTED_OBJECT;
 
 	// Stencil operations if pixel is front-facing
 	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
@@ -101,7 +101,18 @@ void Game::Initialize(HWND window, int width, int height)
 	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
 	// Create depth stencil state
-	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilReplaceState.ReleaseAndGetAddressOf());
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilReplaceState.ReleaseAndGetAddressOf());
+
+    // THEORY: Enabling depth test for this DSS means that the move hover will not "pass through" objects (to the terrain underneath/behind)
+    dsDesc.DepthEnable = true;
+    dsDesc.StencilReadMask = STENCIL_TERRAIN;
+    dsDesc.StencilWriteMask = STENCIL_TERRAIN;
+
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilReplaceStateTerrain.ReleaseAndGetAddressOf());
+
+    dsDesc.DepthEnable = false;
+    dsDesc.StencilReadMask = STENCIL_SELECTED_OBJECT;
+    dsDesc.StencilWriteMask = STENCIL_SELECTED_OBJECT;
 
 	// Stencil operations if pixel is front-facing
 	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
@@ -112,7 +123,12 @@ void Game::Initialize(HWND window, int width, int height)
 	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_NOT_EQUAL;
 
 	// Create depth stencil state
-	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilTestState.ReleaseAndGetAddressOf());
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilTestState.ReleaseAndGetAddressOf());
+
+    dsDesc.StencilReadMask = STENCIL_TERRAIN;
+    dsDesc.StencilWriteMask = STENCIL_TERRAIN;
+
+	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilTestStateTerrain.ReleaseAndGetAddressOf());
 }
 
 void Game::SetGridState(bool state)
@@ -224,7 +240,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]()
         {
             // Do not blend the blurred texture with the areas occupied by a selected object
-            context->OMSetDepthStencilState(m_stencilTestState.Get(), 1);
+            context->OMSetDepthStencilState(m_stencilTestState.Get(), STENCIL_SELECTED_OBJECT);
         });
         m_sprites->Draw(m_rt2SRV.Get(), fullscreenRect);
         m_sprites->End();
@@ -301,7 +317,7 @@ void Game::Render()
                         part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[mesh->name][j++].Get(), [&]
                         {
                             // Custom DSS so the mesh will be rendered to the stencil buffer also
-                            context->OMSetDepthStencilState(m_stencilReplaceState.Get(), 1);
+                            context->OMSetDepthStencilState(m_stencilReplaceState.Get(), STENCIL_SELECTED_OBJECT);
                         });
                     }
                 }
@@ -339,7 +355,12 @@ void Game::Render()
     context->PSSetSamplers(0, 1, samplers);
 
 	//Render the batch,  This is handled in the Display chunk becuase it has the potential to get complex
+    // NOTE: Assuming PrimitiveBatch doesn't mess with states
+    context->OMSetDepthStencilState(m_stencilReplaceStateTerrain.Get(), STENCIL_TERRAIN);
+
 	m_displayChunk.RenderBatch(m_deviceResources);
+
+    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
     PostProcess(context);
 

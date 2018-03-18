@@ -23,6 +23,9 @@
 // provides a game loop.
 class Game : public DX::IDeviceNotify
 {
+    constexpr static uint32_t STENCIL_SELECTED_OBJECT   = (1 << 0);
+    constexpr static uint32_t STENCIL_TERRAIN           = (1 << 1);
+
 public:
 	enum PickingMode
 	{
@@ -99,8 +102,12 @@ private:
 	DisplayChunk						m_displayChunk;
 	InputCommands						inputCommands;
 
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceState;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestState;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceState;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestState;
+
+    // Special DSS for rendering the terrain, since I want what m_stencilReplaceState does PLUS I want depth testing on
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceStateTerrain;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestStateTerrain;
 
 	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
 	std::map<std::wstring, std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;
