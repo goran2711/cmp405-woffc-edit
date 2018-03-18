@@ -17,7 +17,6 @@ DepthSampler::DepthSampler(ID3D11Device* device, DXGI_FORMAT depthBufferFormat)
 
     device->CreateTexture2D(&bufDesc, nullptr, m_stagingTexture.ReleaseAndGetAddressOf());
 
-    // NOTE: Unsure of the UAV format (IT WOULD DEPEND ON depthBufferFormat!!)
     CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc(D3D11_UAV_DIMENSION_TEXTURE2D, bufDesc.Format);
     device->CreateUnorderedAccessView(m_depthSampleTexture.Get(), &uavDesc, m_depthSampleUAV.ReleaseAndGetAddressOf());
 
@@ -48,6 +47,8 @@ void DepthSampler::Execute(ID3D11DeviceContext* context, float x, float y, ID3D1
     *(SettingsBuffer*) mappedResource.pData = m_settings;
 
     context->Unmap(m_settingsBuffer.Get(), 0);
+
+    context->CSSetConstantBuffers(0, 1, m_settingsBuffer.GetAddressOf());
 
     // Set SRV and UAV
     context->CSSetShaderResources(0, 1, &depthStencilSRV);

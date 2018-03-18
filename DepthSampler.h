@@ -20,7 +20,7 @@ public:
     float XM_CALLCONV GetLinearDepthValue(D3D11_VIEWPORT viewport, DirectX::FXMMATRIX world, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection) const;
 
 private:
-    // The 1x1 texture which will be rendered to
+    // The 1x1 texture which the sampled depth value will be output to
     Microsoft::WRL::ComPtr<ID3D11Texture2D>             m_depthSampleTexture;
     Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>   m_depthSampleUAV;
 

@@ -371,6 +371,7 @@ void Game::Render()
     float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
     float linearDepth = m_depthSampler->GetLinearDepthValue(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
 
+    // linearDepth: {linearDepth}
     m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
 
     PostProcess(context);
