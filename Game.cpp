@@ -365,9 +365,11 @@ void Game::Render()
 
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
+    // Sampling depth shenanigans
     m_depthSampler->ReadDepthValue(context);
 
     float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
+    float linearDepth = m_depthSampler->GetLinearDepthValue(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
 
     m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
 

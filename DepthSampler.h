@@ -17,7 +17,7 @@ public:
     void ReadDepthValue(ID3D11DeviceContext* context);
 
     float GetExponentialDepthValue() const { return m_exponentialDepth; }
-    //float XM_CALLCONV GetLinearDepthValue(D3D11_VIEWPORT viewport, DirectX::FXMMATRIX world, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection) const;
+    float XM_CALLCONV GetLinearDepthValue(D3D11_VIEWPORT viewport, DirectX::FXMMATRIX world, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection) const;
 
 private:
     // The 1x1 texture which will be rendered to

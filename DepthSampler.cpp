@@ -1,17 +1,19 @@
 #include "DepthSampler.h"
 #include "ReadData.h"
 
+using namespace DirectX;
 using namespace Microsoft::WRL;
 
 DepthSampler::DepthSampler(ID3D11Device* device, DXGI_FORMAT depthBufferFormat)
 {
     // Create buffer to store the result in
-    CD3D11_TEXTURE2D_DESC bufDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 1, 1, 0, D3D11_BIND_UNORDERED_ACCESS, D3D11_USAGE_DEFAULT, D3D11_CPU_ACCESS_READ);
+    CD3D11_TEXTURE2D_DESC bufDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 1, 1, 0, D3D11_BIND_UNORDERED_ACCESS, D3D11_USAGE_DEFAULT);
 
     device->CreateTexture2D(&bufDesc, nullptr, m_depthSampleTexture.ReleaseAndGetAddressOf());
 
     bufDesc.BindFlags = 0;
     bufDesc.Usage = D3D11_USAGE_STAGING;
+    bufDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 
     device->CreateTexture2D(&bufDesc, nullptr, m_stagingTexture.ReleaseAndGetAddressOf());
 
@@ -28,8 +30,9 @@ DepthSampler::DepthSampler(ID3D11Device* device, DXGI_FORMAT depthBufferFormat)
     device->CreateComputeShader(csBlob.data(), csBlob.size(), nullptr, m_computeShader.ReleaseAndGetAddressOf());
 }
 
-void DepthSampler::Execute(ID3D11DeviceContext* context, float x, float y, ID3D11ShaderResourceView * depthStencilSRV)
+void DepthSampler::Execute(ID3D11DeviceContext* context, float x, float y, ID3D11ShaderResourceView* depthStencilSRV)
 {
+    // Unbind the depth stencil buffer so that it can be used as input
     ID3D11RenderTargetView* renderTargetView;
     ID3D11DepthStencilView* depthStencilView;
     context->OMGetRenderTargets(1, &renderTargetView, &depthStencilView);
@@ -54,9 +57,13 @@ void DepthSampler::Execute(ID3D11DeviceContext* context, float x, float y, ID3D1
     context->CSSetShader(m_computeShader.Get(), nullptr, 0);
     context->Dispatch(1, 1, 1);
 
+    // Unbind the depth stencil buffer from input and re-bind it as output
     ID3D11ShaderResourceView* nullSRV = nullptr;
     context->CSSetShaderResources(0, 1, &nullSRV);
     context->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+
+    m_samplePoint.x = x;
+    m_samplePoint.y = y;
     m_firstRun = false;
 }
 
@@ -76,6 +83,15 @@ void DepthSampler::ReadDepthValue(ID3D11DeviceContext* context)
     m_exponentialDepth = static_cast<float*>(mappedResource.pData)[0];
 
     context->Unmap(m_stagingTexture.Get(), 0);
+}
+
+float XM_CALLCONV DepthSampler::GetLinearDepthValue(D3D11_VIEWPORT viewport, FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection) const
+{
+    XMVECTOR samplePoint = XMVectorSet(m_samplePoint.x, m_samplePoint.y, m_exponentialDepth, 1.f);
+
+    samplePoint = XMVector3Unproject(samplePoint, 0.f, 0.f, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, projection, view, world);
+
+    return samplePoint.m128_f32[2];
 }
 
 
