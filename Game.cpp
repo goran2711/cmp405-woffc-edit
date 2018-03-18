@@ -202,8 +202,10 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_sprites->End();
 
         // Blur highlight buffer
-        // FIX: This doesn't work properly
-        context->OMSetRenderTargets(1, m_rt2RTV.GetAddressOf(), nullptr);
+        // NOTE: I _would_ use m_rt2RTV/SRV here, but for some reason BasicPostProcess only works properly on a full size back buffer
+        ID3D11ShaderResourceView* nullSRV = nullptr;
+        context->PSSetShaderResources(0, 1, &nullSRV);
+        context->OMSetRenderTargets(1, m_highlightRTV.GetAddressOf(), nullptr);
 
         m_blurPostProcess->SetEffect(BasicPostProcess::GaussianBlur_5x5);
         m_blurPostProcess->SetGaussianParameter(1.f);
@@ -222,7 +224,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
             // Do not blend the blurred texture with the areas occupied by a selected object
             context->OMSetDepthStencilState(m_stencilTestState.Get(), 1);
         });
-        m_sprites->Draw(m_rt1SRV.Get(), fullscreenRect);
+        m_sprites->Draw(m_highlightSRV.Get(), fullscreenRect);
         m_sprites->End();
     }
 }
@@ -1016,7 +1018,7 @@ void Game::CreateDeviceDependentResources()
 	}
 	
 	m_highlightEffect = std::make_unique<HighlightEffect>(m_deviceResources->GetD3DDevice());
-    m_highlightEffect->SetHighlightColour(Colors::AliceBlue);
+    m_highlightEffect->SetHighlightColour(Colors::Yellow);
 
     m_blurPostProcess = std::make_unique<BasicPostProcess>(m_deviceResources->GetD3DDevice());
 
