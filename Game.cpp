@@ -721,6 +721,10 @@ bool Game::RemoveDisplayListItem(int id)
     if (it == m_displayList.cend())
         return false;
 
+    // TODO: Do something about the input layouts as well--if the last of a mesh type has been deleted,
+    //       perhaps that input layout (for highlight effect) should be deleted also?
+    //       - Somehow utilise shared_ptr for this purpose?
+
     m_displayList.erase(it);
     return true;
 }
@@ -995,14 +999,13 @@ void Game::CreateDeviceDependentResources()
 	device->CreateGeometryShader(blob.data(), blob.size(), nullptr, m_pivotGeometryShader.ReleaseAndGetAddressOf());
 
 
-	// Create a 1x1 white pixel texture for selection box
+	// Create a 1x1 texture for selection box
 	CD3D11_TEXTURE2D_DESC selBoxTexDesc(DXGI_FORMAT_R8G8B8A8_UNORM, 1U, 1U, 1U, 0U, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_IMMUTABLE);
 
-	// Format ABGR
-	unsigned int pixel = 0x40FFFFFF;
+    PackedVector::XMCOLOR pixel(1.f, 0.f, 0.f, 0.f);
 	D3D11_SUBRESOURCE_DATA initialData;
-	initialData.pSysMem = &pixel;
-	initialData.SysMemPitch = sizeof(pixel);
+	initialData.pSysMem = &pixel.c;
+	initialData.SysMemPitch = sizeof(PackedVector::XMCOLOR);
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> selectionTex;
 	device->CreateTexture2D(&selBoxTexDesc, &initialData, selectionTex.ReleaseAndGetAddressOf());

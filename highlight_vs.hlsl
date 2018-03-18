@@ -9,9 +9,9 @@ cbuffer Matrices : register(b0)
 struct VSInput
 {
     float3 position : SV_Position;
-    float3 normal : NORMAL;
+    float3 normal : NORMAL;     // Ignored
     float4 tangent : TANGENT;   // Ignored
-    float4 color : COLOR;
+    float4 color : COLOR;       // Ignored
     float2 texCoord : TEXCOORD; // Ignored
 };
 
@@ -22,10 +22,7 @@ struct VSOutput
 
 VSOutput main(VSInput input)
 {
-    static const float DIST = 0.02f;
-
     float4 newPosition = float4(input.position, 1.f);
-    //float4 newPosition = float4(input.position + (input.normal * DIST), 1.f);
 
     newPosition = mul(newPosition, world);
     newPosition = mul(newPosition, view);
