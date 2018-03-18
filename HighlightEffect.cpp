@@ -1,6 +1,6 @@
 #include "HighlightEffect.h"
 #include "ReadData.h"
-
+#include "DirectXColors.h"
 
 HighlightEffect::HighlightEffect(ID3D11Device* device)
 {
@@ -21,6 +21,9 @@ HighlightEffect::HighlightEffect(ID3D11Device* device)
     // Create constant buffers
     m_matrixBuffer.Create(device);
     m_propertiesBuffer.Create(device);
+
+    // Initialise highlight colour
+    m_highlightProperties.colour = Colors::White;
 }
 
 void HighlightEffect::Apply(ID3D11DeviceContext * deviceContext)
@@ -35,7 +38,7 @@ void HighlightEffect::Apply(ID3D11DeviceContext * deviceContext)
     ID3D11Buffer* matriceBuffer[] = { m_matrixBuffer.GetBuffer() };
     deviceContext->VSSetConstantBuffers(0, 1, matriceBuffer);
 
-    m_propertiesBuffer.SetData(deviceContext, { XMVectorSet(1.f, 0.f, 0.f, 1.f) });
+    m_propertiesBuffer.SetData(deviceContext, m_highlightProperties);
 
     ID3D11Buffer* propertiesBuffer[] = { m_propertiesBuffer.GetBuffer() };
     deviceContext->PSSetConstantBuffers(0, 1, propertiesBuffer);
@@ -70,4 +73,9 @@ void XM_CALLCONV HighlightEffect::SetMatrices(FXMMATRIX world, CXMMATRIX view, C
     m_matrices.world = world;
     m_matrices.view = view;
     m_matrices.projection = projection;
+}
+
+void XM_CALLCONV HighlightEffect::SetHighlightColour(FXMVECTOR colour)
+{
+    m_highlightProperties.colour = colour;
 }

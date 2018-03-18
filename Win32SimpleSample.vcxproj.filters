@@ -126,9 +126,6 @@
     <ClInclude Include="HighlightEffect.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="Win32SimpleSample.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
@@ -157,5 +154,8 @@
     <FxCompile Include="highlight_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

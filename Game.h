@@ -16,6 +16,7 @@
 #include <map>
 
 #include "HighlightEffect.h"
+#include "PostProcess.h"
 
 
 // A basic game implementation that creates a D3D11 device and
@@ -80,6 +81,8 @@ private:
 
 	void Update(DX::StepTimer const& timer);
 
+    void PostProcess(ID3D11DeviceContext* context);
+
 	void CreateDeviceDependentResources();
 	void CreateWindowSizeDependentResources();
 
@@ -104,6 +107,22 @@ private:
 	std::vector<int> m_selectionIDs;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>						m_selectionBoxTexture;
+
+    //render targets and post process stuff
+    // The texture we render the scene prior to post processing
+    //Microsoft::WRL::ComPtr<ID3D11Texture2D>                                 m_sceneTex;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_sceneSRV;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_sceneRTV;
+
+    // Intermediate render targers for post processing
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_rt1SRV;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_rt1RTV;
+
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_rt2SRV;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_rt2RTV;
+
+    std::unique_ptr<DirectX::BasicPostProcess>                              m_blurPostProcess;
+
 
 	// Basic effect without vertex colours
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPosition>>		m_pivotBatch;

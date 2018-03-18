@@ -24,9 +24,8 @@ VSOutput main(VSInput input)
 {
     static const float DIST = 0.02f;
 
-    // NOTE: Try transforming the normal?
-    //float4 newPosition = float4(input.position, 1.f);
-    float4 newPosition = float4(input.position + (input.normal * DIST), 1.f);
+    float4 newPosition = float4(input.position, 1.f);
+    //float4 newPosition = float4(input.position + (input.normal * DIST), 1.f);
 
     newPosition = mul(newPosition, world);
     newPosition = mul(newPosition, view);
