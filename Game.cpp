@@ -15,7 +15,8 @@ using Microsoft::WRL::ComPtr;
 
 Game::Game()
 {
-	m_deviceResources = std::make_unique<DX::DeviceResources>();
+    // NOTE: Need to use DSS format R24G8_TYPELESS because I am creating a SRV for it
+	m_deviceResources = std::make_unique<DX::DeviceResources>(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_R24G8_TYPELESS);
 	m_deviceResources->RegisterDeviceNotify(this);
 	m_displayList.clear();
 
@@ -172,6 +173,8 @@ void Game::Update(DX::StepTimer const& timer)
 	m_batchEffect->SetWorld(SimpleMath::Matrix::Identity);
 	m_displayChunk.m_terrainEffect->SetView(m_view);
 	m_displayChunk.m_terrainEffect->SetWorld(SimpleMath::Matrix::Identity);
+
+    // Projective texturing business
 
 
 	#ifdef DXTK_AUDIO
@@ -361,6 +364,12 @@ void Game::Render()
 	m_displayChunk.RenderBatch(m_deviceResources);
 
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+
+    m_depthSampler->ReadDepthValue(context);
+
+    float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
+
+    m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
 
     PostProcess(context);
 
@@ -985,6 +994,8 @@ void Game::CreateDeviceDependentResources()
     m_highlightEffect->SetHighlightColour(Colors::Yellow);
 
     m_blurPostProcess = std::make_unique<BasicPostProcess>(m_deviceResources->GetD3DDevice());
+
+    m_depthSampler = std::make_unique<DepthSampler>(m_deviceResources->GetD3DDevice(), m_deviceResources->GetDepthBufferFormat());
 
 	m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
 

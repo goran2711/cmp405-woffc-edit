@@ -170,6 +170,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ChunkObject.cpp" />
+    <ClCompile Include="DepthSampler.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="DisplayChunk.cpp" />
     <ClCompile Include="DisplayObject.cpp" />
@@ -189,6 +190,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ChunkObject.h" />
+    <ClInclude Include="DepthSampler.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="DisplayChunk.h" />
     <ClInclude Include="DisplayObject.h" />
@@ -222,6 +224,16 @@
     <Image Include="toolbar1.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="depthSample_cs.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="highlight_ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>

@@ -35,19 +35,20 @@ namespace DX
         RECT GetOutputSize() const { return m_outputSize; }
 
         // Direct3D Accessors.
-        ID3D11Device*           GetD3DDevice() const                    { return m_d3dDevice.Get(); }
-        ID3D11Device1*          GetD3DDevice1() const                   { return m_d3dDevice1.Get(); }
-        ID3D11DeviceContext*    GetD3DDeviceContext() const             { return m_d3dContext.Get(); }
-        ID3D11DeviceContext1*   GetD3DDeviceContext1() const            { return m_d3dContext1.Get(); }
-        IDXGISwapChain*         GetSwapChain() const                    { return m_swapChain.Get(); }
-        IDXGISwapChain1*        GetSwapChain1() const                   { return m_swapChain1.Get(); }
-        D3D_FEATURE_LEVEL       GetDeviceFeatureLevel() const           { return m_d3dFeatureLevel; }
-        ID3D11RenderTargetView*	GetBackBufferRenderTargetView() const   { return m_d3dRenderTargetView.Get(); }
-        ID3D11DepthStencilView* GetDepthStencilView() const             { return m_d3dDepthStencilView.Get(); }
-        DXGI_FORMAT             GetBackBufferFormat() const             { return m_backBufferFormat; }
-        DXGI_FORMAT             GetDepthBufferFormat() const            { return m_depthBufferFormat; }
-        D3D11_VIEWPORT          GetScreenViewport() const               { return m_screenViewport; }
-        UINT                    GetBackBufferCount() const              { return m_backBufferCount; }
+        ID3D11Device*               GetD3DDevice() const                        { return m_d3dDevice.Get(); }
+        ID3D11Device1*              GetD3DDevice1() const                       { return m_d3dDevice1.Get(); }
+        ID3D11DeviceContext*        GetD3DDeviceContext() const                 { return m_d3dContext.Get(); }
+        ID3D11DeviceContext1*       GetD3DDeviceContext1() const                { return m_d3dContext1.Get(); }
+        IDXGISwapChain*             GetSwapChain() const                        { return m_swapChain.Get(); }
+        IDXGISwapChain1*            GetSwapChain1() const                       { return m_swapChain1.Get(); }
+        D3D_FEATURE_LEVEL           GetDeviceFeatureLevel() const               { return m_d3dFeatureLevel; }
+        ID3D11RenderTargetView*	    GetBackBufferRenderTargetView() const       { return m_d3dRenderTargetView.Get(); }
+        ID3D11DepthStencilView*     GetDepthStencilView() const                 { return m_d3dDepthStencilView.Get(); }
+        ID3D11ShaderResourceView*   GetDepthStencilShaderResourceView() const   { return m_d3dDepthStencilShaderResourceView.Get(); }
+        DXGI_FORMAT                 GetBackBufferFormat() const                 { return m_backBufferFormat; }
+        DXGI_FORMAT                 GetDepthBufferFormat() const                { return m_depthBufferFormat; }
+        D3D11_VIEWPORT              GetScreenViewport() const                   { return m_screenViewport; }
+        UINT                        GetBackBufferCount() const                  { return m_backBufferCount; }
 
         // Performance events
         void PIXBeginEvent(_In_z_ const wchar_t* name)
@@ -89,6 +90,7 @@ namespace DX
         // Direct3D rendering objects. Required for 3D.
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_d3dRenderTargetView;
         Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_d3dDepthStencilView;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>m_d3dDepthStencilShaderResourceView;
         D3D11_VIEWPORT                                  m_screenViewport;
 
         // Direct3D properties.

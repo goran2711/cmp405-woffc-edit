@@ -18,6 +18,8 @@
 #include "HighlightEffect.h"
 #include "PostProcess.h"
 
+#include "DepthSampler.h"
+
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -108,6 +110,8 @@ private:
     // Special DSS for rendering the terrain, since I want what m_stencilReplaceState does PLUS I want depth testing on
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceStateTerrain;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestStateTerrain;
+
+    std::unique_ptr<DepthSampler>                                           m_depthSampler;
 
 	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
 	std::map<std::wstring, std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;

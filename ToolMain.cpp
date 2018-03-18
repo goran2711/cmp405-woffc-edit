@@ -268,6 +268,9 @@ void ToolMain::Tick(MSG *msg)
         //add to scenegraph
         //resend scenegraph to Direct X renderer
 
+    m_toolInputCommands.mouseX = m_cursorPos.x;
+    m_toolInputCommands.mouseY = m_cursorPos.y;
+
     if (m_captureCursorThisFrame)
     {
         captureMouse(!m_cursorCaptured, (!m_cursorCaptured && m_captureCursorForCameraThisFrame));

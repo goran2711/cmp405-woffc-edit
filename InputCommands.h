@@ -12,6 +12,9 @@ struct InputCommands
 	long mouseDX;
 	long mouseDY;
 
+    long mouseX;
+    long mouseY;
+
 	struct
 	{
 		long x, y;
