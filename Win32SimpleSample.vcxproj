@@ -170,6 +170,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ChunkObject.cpp" />
+    <ClCompile Include="CustomEffect.cpp" />
     <ClCompile Include="DepthSampler.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="DisplayChunk.cpp" />
@@ -181,6 +182,7 @@
     <ClCompile Include="MFCRenderFrame.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="MFCMain.cpp" />
+    <ClCompile Include="ProjectiveTexturingEffect.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="SelectDialogue.cpp" />
     <ClCompile Include="sqlite3.c" />
@@ -192,6 +194,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ChunkObject.h" />
     <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="CustomEffect.h" />
     <ClInclude Include="DepthSampler.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="DisplayChunk.h" />
@@ -202,6 +205,7 @@
     <ClInclude Include="MFCFrame.h" />
     <ClInclude Include="MFCRenderFrame.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ProjectiveTexturingEffect.h" />
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SceneObject.h" />

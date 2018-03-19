@@ -371,14 +371,14 @@ void Game::Render()
 	m_displayChunk.RenderBatch(m_deviceResources);
 
 
-    // Render terrain again, but this time with projective texturing
-    context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-    context->OMSetDepthStencilState(m_states->DepthRead(), 0);
+    //// Render terrain again, but this time with projective texturing
+    //context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
+    //context->OMSetDepthStencilState(m_states->DepthRead(), 0);
 
-    m_displayChunk.RenderBatch(m_deviceResources, true);
+    //m_displayChunk.RenderBatch(m_deviceResources, true);
 
 
-    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    //context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
     // Sampling depth shenanigans
     m_depthSampler->ReadDepthValue(context);
@@ -476,6 +476,7 @@ void Game::Clear()
     context->ClearRenderTargetView(m_highlightRTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt1RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt2RTV.Get(), Colors::Black);
+    context->ClearRenderTargetView(m_rt3RTV.Get(), Colors::Black);
 
 	// Set the viewport.
 	auto viewport = m_deviceResources->GetScreenViewport();
