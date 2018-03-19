@@ -178,6 +178,12 @@
     <FxCompile Include="volumeDecal_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="projectiveTexturing_ps.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="projectiveTexturing_vs.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

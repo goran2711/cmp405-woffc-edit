@@ -48,7 +48,8 @@ void DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResource
 
     if (projectiveTexturing)
     {
-
+        m_projectiveTexturingEffect->Apply(context);
+        context->IASetInputLayout(m_projectiveTexturingInputLayout.Get());
     }
     else
     {
@@ -138,12 +139,23 @@ void DisplayChunk::LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResour
 			VertexPositionNormalTexture::InputElementCount,
 			shaderByteCode,
 			byteCodeLength,
-			m_terrainInputLayout.GetAddressOf())
+			m_terrainInputLayout.ReleaseAndGetAddressOf())
 		);
 
 	m_batch = std::make_unique<PrimitiveBatch<VertexPositionNormalTexture>>(devicecontext);
 
-	
+	// projective texturing effect setup
+    m_projectiveTexturingEffect = std::make_unique<ProjectiveTexturingEffect>(device);
+    m_projectiveTexturingEffect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
+
+    DX::ThrowIfFailed(
+        device->CreateInputLayout(VertexPositionNormalTexture::InputElements,
+                                  VertexPositionNormalTexture::InputElementCount,
+                                  shaderByteCode,
+                                  byteCodeLength,
+                                  m_projectiveTexturingInputLayout.ReleaseAndGetAddressOf())
+    );
+
 }
 
 void DisplayChunk::SaveHeightMap()

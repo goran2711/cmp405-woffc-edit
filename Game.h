@@ -21,7 +21,6 @@
 #include "DepthSampler.h"
 #include "VolumeDecal.h"
 
-
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game : public DX::IDeviceNotify
@@ -121,6 +120,8 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D11SamplerState>                              m_linearBorderSS;
 
+
+    // Selection highlighting
 	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
 	std::map<std::wstring, std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;
 	std::vector<int> m_selectionIDs;

@@ -212,7 +212,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
     RECT fullscreenRect{ 0, 0, viewport.Width, viewport.Height };
 
     // Blend in the terrain w/ projected texture on it
-    m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive());
+    m_sprites->Begin(SpriteSortMode_Immediate/*, m_states->Additive()*/);
     m_sprites->Draw(m_rt3SRV.Get(), fullscreenRect);
     m_sprites->End();
 
@@ -262,46 +262,46 @@ void Game::PostProcess(ID3D11DeviceContext* context)
 // Draws the scene.
 void Game::Render()
 {
-	// Don't try to render anything before the first Update.
-	if (m_timer.GetFrameCount() == 0)
-	{
-		return;
-	}
+    // Don't try to render anything before the first Update.
+    if (m_timer.GetFrameCount() == 0)
+    {
+        return;
+    }
 
-	Clear();
+    Clear();
 
-	m_deviceResources->PIXBeginEvent(L"Render");
-	auto context = m_deviceResources->GetD3DDeviceContext();
+    m_deviceResources->PIXBeginEvent(L"Render");
+    auto context = m_deviceResources->GetD3DDeviceContext();
 
-	if (m_grid)
-	{
-		// Draw procedurally generated dynamic grid
-		const XMVECTORF32 xaxis = { 512.f, 0.f, 0.f };
-		const XMVECTORF32 yaxis = { 0.f, 0.f, 512.f };
-		DrawGrid(xaxis, yaxis, g_XMZero, 512, 512, Colors::Gray);
-	}
+    if (m_grid)
+    {
+        // Draw procedurally generated dynamic grid
+        const XMVECTORF32 xaxis = { 512.f, 0.f, 0.f };
+        const XMVECTORF32 yaxis = { 0.f, 0.f, 512.f };
+        DrawGrid(xaxis, yaxis, g_XMZero, 512, 512, Colors::Gray);
+    }
 
-	//RENDER OBJECTS FROM SCENEGRAPH
-	{
-		int i = 0;
-		for (auto itModel = m_displayList.cbegin(); itModel != m_displayList.cend(); ++itModel, ++i)
-		{
-			auto model = itModel->m_model;
-			assert(model != nullptr);
+    //RENDER OBJECTS FROM SCENEGRAPH
+    {
+        int i = 0;
+        for (auto itModel = m_displayList.cbegin(); itModel != m_displayList.cend(); ++itModel, ++i)
+        {
+            auto model = itModel->m_model;
+            assert(model != nullptr);
 
-			m_deviceResources->PIXBeginEvent(L"Draw model");
-			const XMVECTORF32 scale = { itModel->m_scale.x, itModel->m_scale.y, itModel->m_scale.z };
-			const XMVECTORF32 translate = { itModel->m_position.x, itModel->m_position.y, itModel->m_position.z };
+            m_deviceResources->PIXBeginEvent(L"Draw model");
+            const XMVECTORF32 scale = { itModel->m_scale.x, itModel->m_scale.y, itModel->m_scale.z };
+            const XMVECTORF32 translate = { itModel->m_position.x, itModel->m_position.y, itModel->m_position.z };
 
-			//convert degrees into radians for rotation matrix
-			XMVECTOR rotate = SimpleMath::Quaternion::CreateFromYawPitchRoll(XMConvertToRadians(itModel->m_orientation.y),
-																 XMConvertToRadians(itModel->m_orientation.x),
-																 XMConvertToRadians(itModel->m_orientation.z));
+            //convert degrees into radians for rotation matrix
+            XMVECTOR rotate = SimpleMath::Quaternion::CreateFromYawPitchRoll(XMConvertToRadians(itModel->m_orientation.y),
+                                                                             XMConvertToRadians(itModel->m_orientation.x),
+                                                                             XMConvertToRadians(itModel->m_orientation.z));
 
-			XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, SimpleMath::Quaternion::Identity, scale, g_XMZero, rotate, translate);
+            XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, SimpleMath::Quaternion::Identity, scale, g_XMZero, rotate, translate);
 
             // First, render object normally
-			model->Draw(context, *m_states, local, m_view, m_projection, false);	// second to last variable in draw,  make TRUE for wireframe
+            model->Draw(context, *m_states, local, m_view, m_projection, false);	// second to last variable in draw,  make TRUE for wireframe
 
             // Render selected objects to the stencil buffer and to a separate render target in a flat colour
             if (std::find(m_selectionIDs.cbegin(), m_selectionIDs.cend(), itModel->m_ID) != m_selectionIDs.cend())
@@ -337,48 +337,65 @@ void Game::Render()
                 context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
             }
 
-			//	//// TODO: Geometry shader to render pivot point
-			//	//context->RSSetState(m_states->CullCounterClockwise());
-			//	//context->GSSetShader(m_pivotGeometryShader.Get(), nullptr, 0);
-			//	//m_pivotEffect->SetMatrices(local, m_view, m_projection);
-			//	//m_pivotEffect->Apply(context);
-			//	//// Render the pivot point
-			//	//m_pivotBatch->Begin();
-			//	//m_pivotBatch->Draw(D3D_PRIMITIVE_TOPOLOGY_POINTLIST, &DirectX::VertexPosition(itModel->m_position), 1);
-			//	//m_pivotBatch->End();
+            //	//// TODO: Geometry shader to render pivot point
+            //	//context->RSSetState(m_states->CullCounterClockwise());
+            //	//context->GSSetShader(m_pivotGeometryShader.Get(), nullptr, 0);
+            //	//m_pivotEffect->SetMatrices(local, m_view, m_projection);
+            //	//m_pivotEffect->Apply(context);
+            //	//// Render the pivot point
+            //	//m_pivotBatch->Begin();
+            //	//m_pivotBatch->Draw(D3D_PRIMITIVE_TOPOLOGY_POINTLIST, &DirectX::VertexPosition(itModel->m_position), 1);
+            //	//m_pivotBatch->End();
 
-			//	//// Unbind geometry shader
-			//	//context->GSSetShader(nullptr, nullptr, 0);
-			//}
+            //	//// Unbind geometry shader
+            //	//context->GSSetShader(nullptr, nullptr, 0);
+            //}
 
-			m_deviceResources->PIXEndEvent();
-		}
-	}
-	m_deviceResources->PIXEndEvent();
+            m_deviceResources->PIXEndEvent();
+        }
+    }
+    m_deviceResources->PIXEndEvent();
 
-	//RENDER TERRAIN
-	context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
-	context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-	context->RSSetState(m_states->CullNone());
+    //RENDER TERRAIN
+    context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    context->RSSetState(m_states->CullNone());
 
     ID3D11SamplerState* samplers[] = { m_states->AnisotropicWrap() };
     context->PSSetSamplers(0, 1, samplers);
 
-	//Render the batch,  This is handled in the Display chunk becuase it has the potential to get complex
+    //Render the batch,  This is handled in the Display chunk becuase it has the potential to get complex
     // NOTE: Assuming PrimitiveBatch doesn't mess with states
     context->OMSetDepthStencilState(m_stencilReplaceStateTerrain.Get(), STENCIL_TERRAIN);
 
-	m_displayChunk.RenderBatch(m_deviceResources);
+    m_displayChunk.RenderBatch(m_deviceResources);
 
 
-    //// Render terrain again, but this time with projective texturing
-    //context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-    //context->OMSetDepthStencilState(m_states->DepthRead(), 0);
+    // Render terrain again, but this time with projective texturing
+    context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
+    context->OMSetDepthStencilState(m_states->DepthNone(), 0);
 
-    //m_displayChunk.RenderBatch(m_deviceResources, true);
+    //context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
 
+    m_displayChunk.m_projectiveTexturingEffect->SetDecalTexture(m_texture1.Get());
 
-    //context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    {
+        XMMATRIX projectorView = XMMatrixLookAtLH(XMVectorSet(0.f, 2.f, 0.f, 1.f), XMVectorSet(0.f, 1.f, 0.f, 1.f), XMVectorSet(0.f, 1.f, 0.f, 0.1f));
+        XMMATRIX projectorProjection = XMMatrixOrthographicLH(32.f, 32.f, 0.01f, 100.f);
+        static const XMMATRIX toUV(
+            0.5f, 0.f, 0.f, 0.f,
+            0.f, -0.5f, 0.f, 0.f,
+            0.f, 0.f, 1.f, 0.f,
+            0.5f, 0.5f, 0.f, 1.f
+        );
+        m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorView * projectorProjection * toUV);
+    }
+
+    m_displayChunk.RenderBatch(m_deviceResources, true);
+
+    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
+    context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
     // Sampling depth shenanigans
     m_depthSampler->ReadDepthValue(context);
