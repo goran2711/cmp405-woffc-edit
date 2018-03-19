@@ -111,6 +111,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceStateTerrain;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestStateTerrain;
 
+    Microsoft::WRL::ComPtr<ID3D11BlendState>                                m_terrainDecalBlendState;
+
     // Terrain brush shenanigans
     std::unique_ptr<DepthSampler>                                           m_depthSampler;
     std::unique_ptr<VolumeDecal>                                            m_volumeDecal;

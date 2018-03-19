@@ -130,7 +130,15 @@ void Game::Initialize(HWND window, int width, int height)
     dsDesc.StencilReadMask = STENCIL_TERRAIN;
     dsDesc.StencilWriteMask = STENCIL_TERRAIN;
 
+    dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+    dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+
 	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilTestStateTerrain.ReleaseAndGetAddressOf());
+
+    // Create blend state for blending the projective texturing RT with the BB
+    CD3D11_BLEND_DESC bDesc(CD3D11_DEFAULT{});
+    bDesc.RenderTarget[0].BlendEnable = TRUE;
+    //bDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_
 }
 
 void Game::SetGridState(bool state)
@@ -212,7 +220,10 @@ void Game::PostProcess(ID3D11DeviceContext* context)
     RECT fullscreenRect{ 0, 0, viewport.Width, viewport.Height };
 
     // Blend in the terrain w/ projected texture on it
-    m_sprites->Begin(SpriteSortMode_Immediate/*, m_states->Additive()*/);
+    // FIX: Additive blending will not get me what I want here.
+    //      - If rt3 alpha is 1, use rt3 colour
+    //      - Otherwise, use destination (back buffer) colour
+    m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive());
     m_sprites->Draw(m_rt3SRV.Get(), fullscreenRect);
     m_sprites->End();
 
@@ -370,32 +381,7 @@ void Game::Render()
 
     m_displayChunk.RenderBatch(m_deviceResources);
 
-
-    // Render terrain again, but this time with projective texturing
-    context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-    context->OMSetDepthStencilState(m_states->DepthNone(), 0);
-
-    //context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
-
-    m_displayChunk.m_projectiveTexturingEffect->SetDecalTexture(m_texture1.Get());
-
-    {
-        XMMATRIX projectorView = XMMatrixLookAtLH(XMVectorSet(0.f, 2.f, 0.f, 1.f), XMVectorSet(0.f, 1.f, 0.f, 1.f), XMVectorSet(0.f, 1.f, 0.f, 0.1f));
-        XMMATRIX projectorProjection = XMMatrixOrthographicLH(32.f, 32.f, 0.01f, 100.f);
-        static const XMMATRIX toUV(
-            0.5f, 0.f, 0.f, 0.f,
-            0.f, -0.5f, 0.f, 0.f,
-            0.f, 0.f, 1.f, 0.f,
-            0.5f, 0.5f, 0.f, 1.f
-        );
-        m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorView * projectorProjection * toUV);
-    }
-
-    m_displayChunk.RenderBatch(m_deviceResources, true);
-
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-    ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
-    context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
     // Sampling depth shenanigans
     m_depthSampler->ReadDepthValue(context);
@@ -403,25 +389,55 @@ void Game::Render()
     float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
     XMVECTOR wsCoord = m_depthSampler->GetWorldSpaceCoordinate(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
 
-    XMVECTOR projectorPosition = wsCoord + (XMVectorSet(0.f, 1.f, 0.f, 0.f) * 2.f);
-    XMVECTOR projectorFocus = projectorPosition - XMVectorSet(0.f, 1.f, 0.f, 0.f);
+    // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
+    m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
 
-    XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 1.f, 0.f, 0.f));
-    // FIX: near + far should be taken from the viewport
-    XMMATRIX projectorProjection = XMMatrixOrthographicLH(256.f, 256.f, 0.1f, 1000.f);
+
+
+
+
+
+
+    /////////////////////// Render terrain again, but this time with projective texturing
+    context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
+    context->OMSetDepthStencilState(m_stencilTestStateTerrain.Get(), STENCIL_TERRAIN);
+
+    context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
+
+    // Projector position a little bit above the area the mouse is hovering over
+    XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 4.f, 0.f, 1.f); // wsCoord + XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+    // Projector is focusing on a point below it (towards terrain)
+    XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
+
+    XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
+
+    // Use orthogoraphic projection
+    XMMATRIX projectorProjection = XMMatrixOrthographicLH(16.f, 16.f, 0.1f, 10.f);
+    //XMMATRIX projectorProjection = XMMatrixPerspectiveFovLH(XM_1DIV2PI, 1.f, 0.1f, 100.f);
 
     // Matrix for transforming homogenous clip space to UV space
-    static const XMMATRIX toTextureSpace(
+    static const XMMATRIX toUV(
         0.5f, 0.f, 0.f, 0.f,
         0.f, -0.5f, 0.f, 0.f,
         0.f, 0.f, 1.f, 0.f,
         0.5f, 0.5f, 0.f, 1.f
     );
 
-    XMMATRIX projectorTransform = projectorView * projectorProjection * toTextureSpace;
+    XMMATRIX projectorTransform = projectorView * projectorProjection * toUV;
 
-    // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
-    m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
+    m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorTransform);
+
+    m_displayChunk.RenderBatch(m_deviceResources, true);
+
+    ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
+    context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
+
+    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+
+
+
+
 
     //// FIX: Volume decal experiments--didn't work..
     //m_volumeDecal->SetMatrices(XMMatrixScaling(3.f, 5.f, 3.f) * XMMatrixTranslation(0.f, 2.f, 0.f), m_view, m_projection);
@@ -493,7 +509,7 @@ void Game::Clear()
     context->ClearRenderTargetView(m_highlightRTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt1RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt2RTV.Get(), Colors::Black);
-    context->ClearRenderTargetView(m_rt3RTV.Get(), Colors::Black);
+    context->ClearRenderTargetView(m_rt3RTV.Get(), XMVectorSet(0.f, 0.f, 0.f, 0.f).m128_f32);
 
 	// Set the viewport.
 	auto viewport = m_deviceResources->GetScreenViewport();
@@ -708,6 +724,7 @@ void Game::BuildDisplayChunk(ChunkObject * SceneChunk)
 	m_displayChunk.PopulateChunkData(SceneChunk);		//migrate chunk data
 	m_displayChunk.LoadHeightMap(m_deviceResources);
 	m_displayChunk.m_terrainEffect->SetProjection(m_projection);
+    m_displayChunk.m_projectiveTexturingEffect->SetDecalTexture(m_texture2.Get());
 	m_displayChunk.InitialiseBatch();
 }
 
@@ -1129,7 +1146,7 @@ void Game::CreateDeviceDependentResources()
     // Set decal texture
     m_volumeDecal->SetDecalTexture(m_texture1.Get());
 
-    static constexpr float transparentBlack[] = { 0.f, 0.f, 0.f, 0.f };
+    static constexpr float transparentBlack[] = { 0.f, 0.f, 0.f, 1.f };
     CD3D11_SAMPLER_DESC ssDesc(D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER,
                                0, 1, D3D11_COMPARISON_NEVER, transparentBlack, -FLT_MAX, FLT_MAX);
     device->CreateSamplerState(&ssDesc, m_linearBorderSS.ReleaseAndGetAddressOf());

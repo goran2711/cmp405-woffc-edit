@@ -34,16 +34,16 @@ void XM_CALLCONV ProjectiveTexturingEffect::SetProjection(FXMMATRIX value)
     m_matrices.projection = value;
 }
 
-void XM_CALLCONV ProjectiveTexturingEffect::SetWorldToProjectorUV(FXMMATRIX value)
+void XM_CALLCONV ProjectiveTexturingEffect::SetProjectorViewProjection(FXMMATRIX value)
 {
-    m_matrices.worldToProjectorUV = value;
+    m_matrices.projectorViewProjection = value;
 }
 
-void XM_CALLCONV ProjectiveTexturingEffect::SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection, FXMMATRIX worldToProjectorUV)
+void XM_CALLCONV ProjectiveTexturingEffect::SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection, FXMMATRIX projectorViewProjection)
 {
     SetMatrices(world, view, projection);
 
-    m_matrices.worldToProjectorUV = worldToProjectorUV;
+    m_matrices.projectorViewProjection = projectorViewProjection;
 }
 
 void ProjectiveTexturingEffect::SetDecalTexture(ID3D11ShaderResourceView* decalTexture)

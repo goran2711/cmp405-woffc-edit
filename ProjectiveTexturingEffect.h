@@ -12,8 +12,8 @@ public:
     void XM_CALLCONV SetWorld(FXMMATRIX value) final;
     void XM_CALLCONV SetView(FXMMATRIX value) final;
     void XM_CALLCONV SetProjection(FXMMATRIX value) final;
-    void XM_CALLCONV SetWorldToProjectorUV(FXMMATRIX value);
-    void XM_CALLCONV SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection, FXMMATRIX worldToProjectorUV);
+    void XM_CALLCONV SetProjectorViewProjection(FXMMATRIX value);
+    void XM_CALLCONV SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection, FXMMATRIX projectorViewProjection);
 
     void SetDecalTexture(ID3D11ShaderResourceView* decalTexture);
 
@@ -26,7 +26,7 @@ private:
         XMMATRIX world;
         XMMATRIX view;
         XMMATRIX projection;
-        XMMATRIX worldToProjectorUV;
+        XMMATRIX projectorViewProjection;
     } m_matrices;
     ConstantBuffer<MatrixBuffer>    m_matrixBuffer;
 

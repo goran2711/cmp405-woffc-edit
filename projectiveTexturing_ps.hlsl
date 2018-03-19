@@ -3,13 +3,15 @@ SamplerState decalSampler : register(s0);
 
 struct VSOut
 {
-    float4 texCoord : PROJECTOR_POS;
-    float4 position : SV_Position;
+    float4 viewPosition : PROJECTOR_POS;
+    float2 tc : TEXCOORD;
 };
 
 float4 main(VSOut input) : SV_Target
 {
-    float2 texCoord = input.texCoord.xy / input.texCoord.w;
+    // Calculate the projected texture coordinates
+    //float2 projectTexCoord = ((input.viewPosition.xy / input.viewPosition.w) / float2(2.f, -2.f)) + 0.5f;
+    float2 projectTexCoord = input.viewPosition.xy / input.viewPosition.w;
 
-    return decalTexture.Sample(decalSampler, texCoord);
+    return decalTexture.Sample(decalSampler, projectTexCoord);
 }

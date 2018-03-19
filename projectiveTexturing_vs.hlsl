@@ -3,7 +3,8 @@ cbuffer MatrixBuffer : register(b0)
     row_major matrix world;
     row_major matrix view;
     row_major matrix projection;
-    row_major matrix worldToProjectorUV;
+
+    row_major matrix projectorViewProjection;
 }
 
 // VertexPositionNormalTexture
@@ -16,7 +17,8 @@ struct VSIn
 
 struct VSOut
 {
-    float4 texCoord : PROJECTOR_POS;
+    float4 viewPosition : PROJECTOR_POS;
+    float2 tc : TEXCOORD;
     float4 position : SV_Position;
 };
 
@@ -26,10 +28,12 @@ VSOut main(VSIn input)
 
     output.position = mul(float4(input.position, 1.f), world);
 
-    output.texCoord = mul(output.position, worldToProjectorUV);
+    output.viewPosition = mul(output.position, projectorViewProjection);
 
     output.position = mul(output.position, view);
     output.position = mul(output.position, projection);
+
+    output.tc = input.texCoord;
 
     return output;
 }
