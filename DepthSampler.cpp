@@ -21,8 +21,7 @@ DepthSampler::DepthSampler(ID3D11Device* device, DXGI_FORMAT depthBufferFormat)
     device->CreateUnorderedAccessView(m_depthSampleTexture.Get(), &uavDesc, m_depthSampleUAV.ReleaseAndGetAddressOf());
 
     // Create const buffer
-    CD3D11_BUFFER_DESC cbufDesc(sizeof(SettingsBuffer), D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-    device->CreateBuffer(&cbufDesc, nullptr, m_settingsBuffer.ReleaseAndGetAddressOf());
+    m_settingsBuffer.Create(device);
 
     // Create compute shader
     auto csBlob = DX::ReadData(L"depthSample_cs.cso");
@@ -41,14 +40,9 @@ void DepthSampler::Execute(ID3D11DeviceContext* context, float x, float y, ID3D1
     m_settings.sampleX = x;
     m_settings.sampleY = y;
 
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    context->Map(m_settingsBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    m_settingsBuffer.SetData(context, m_settings);
 
-    *(SettingsBuffer*) mappedResource.pData = m_settings;
-
-    context->Unmap(m_settingsBuffer.Get(), 0);
-
-    context->CSSetConstantBuffers(0, 1, m_settingsBuffer.GetAddressOf());
+    context->CSSetConstantBuffers(0, 1, m_settingsBuffer.GetAddressOfBuffer());
 
     // Set SRV and UAV
     context->CSSetShaderResources(0, 1, &depthStencilSRV);
@@ -86,13 +80,11 @@ void DepthSampler::ReadDepthValue(ID3D11DeviceContext* context)
     context->Unmap(m_stagingTexture.Get(), 0);
 }
 
-float XM_CALLCONV DepthSampler::GetLinearDepthValue(D3D11_VIEWPORT viewport, FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection) const
+XMVECTOR XM_CALLCONV DepthSampler::GetWorldSpaceCoordinate(D3D11_VIEWPORT viewport, FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection) const
 {
     XMVECTOR samplePoint = XMVectorSet(m_samplePoint.x, m_samplePoint.y, m_exponentialDepth, 1.f);
 
-    samplePoint = XMVector3Unproject(samplePoint, 0.f, 0.f, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, projection, view, world);
-
-    return samplePoint.m128_f32[2];
+    return XMVector3Unproject(samplePoint, 0.f, 0.f, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, projection, view, world);
 }
 
 

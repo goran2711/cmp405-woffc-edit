@@ -34,14 +34,10 @@ void HighlightEffect::Apply(ID3D11DeviceContext * deviceContext)
 
     // Set constant buffers
     m_matrixBuffer.SetData(deviceContext, m_matrices);
-
-    ID3D11Buffer* matriceBuffer[] = { m_matrixBuffer.GetBuffer() };
-    deviceContext->VSSetConstantBuffers(0, 1, matriceBuffer);
-
     m_propertiesBuffer.SetData(deviceContext, m_highlightProperties);
 
-    ID3D11Buffer* propertiesBuffer[] = { m_propertiesBuffer.GetBuffer() };
-    deviceContext->PSSetConstantBuffers(0, 1, propertiesBuffer);
+    deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOfBuffer());
+    deviceContext->PSSetConstantBuffers(0, 1, m_propertiesBuffer.GetAddressOfBuffer());
 
     // NOTE: ModelMesh::PrepareForRendering takes care of states (raster states, samplers, depth, etc.)
     // NOTE: Drawing (handling of vertex buffers, setting input layouts, etc.) is done in the Model/Mesh/MeshPart class

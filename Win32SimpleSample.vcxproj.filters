@@ -68,6 +68,7 @@
     <ClCompile Include="TransformDialog.cpp" />
     <ClCompile Include="HighlightEffect.cpp" />
     <ClCompile Include="DepthSampler.cpp" />
+    <ClCompile Include="VolumeDecal.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeviceResources.h">
@@ -126,6 +127,10 @@
     <ClInclude Include="TransformDialog.h" />
     <ClInclude Include="HighlightEffect.h" />
     <ClInclude Include="DepthSampler.h" />
+    <ClInclude Include="VolumeDecal.h" />
+    <ClInclude Include="ConstantBuffer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Win32SimpleSample.rc">
@@ -157,6 +162,12 @@
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="depthSample_cs.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="volumeDecal_vs.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="volumeDecal_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

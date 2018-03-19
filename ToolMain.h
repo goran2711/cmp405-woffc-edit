@@ -8,6 +8,8 @@
 #include "InputCommands.h"
 #include <vector>
 
+// FIX: WM_SIZE message doesn't seem to work anymore!
+//      - Works on my fork though
 
 class ToolMain
 {

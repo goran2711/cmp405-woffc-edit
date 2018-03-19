@@ -369,9 +369,26 @@ void Game::Render()
     m_depthSampler->ReadDepthValue(context);
 
     float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
-    float linearDepth = m_depthSampler->GetLinearDepthValue(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
+    XMVECTOR wsCoord = m_depthSampler->GetWorldSpaceCoordinate(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
 
-    // linearDepth: {linearDepth}
+    XMVECTOR projectorPosition = wsCoord + (XMVectorSet(0.f, 1.f, 0.f, 0.f) * 2.f);
+    XMVECTOR projectorFocus = projectorPosition - XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+    XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 1.f, 0.f, 0.f));
+    // FIX: near + far should be taken from the viewport
+    XMMATRIX projectorProjection = XMMatrixOrthographicLH(256.f, 256.f, 0.1f, 1000.f);
+
+    // Matrix for transforming homogenous clip space to UV space
+    static const XMMATRIX toTextureSpace(
+        0.5f, 0.f, 0.f, 0.f,
+        0.f, -0.5f, 0.f, 0.f,
+        0.f, 0.f, 1.f, 0.f,
+        0.5f, 0.5f, 0.f, 1.f
+    );
+
+    XMMATRIX projectorTransform = projectorView * projectorProjection * toTextureSpace;
+
+    // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
     m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
 
     PostProcess(context);
