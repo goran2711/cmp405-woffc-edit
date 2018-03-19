@@ -12,7 +12,7 @@ public:
 	DisplayChunk();
 	~DisplayChunk();
 	void PopulateChunkData(ChunkObject * SceneChunk);
-	void RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources);
+	void RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources, bool projectiveTexturing = false);
 	void InitialiseBatch();	//initial setup, base coordinates etc based on scale
 	void LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResources);
 	void SaveHeightMap();			//saves the heigtmap back to file.
@@ -20,6 +20,7 @@ public:
 	void GenerateHeightmap();		//creates or alters the heightmap
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionNormalTexture>>  m_batch;
 	std::unique_ptr<DirectX::BasicEffect>       m_terrainEffect;
+    // std::unique_ptr<ProjectiveTexturingEffect>   m_projectiveTexturingEffect;
 
 	ID3D11ShaderResourceView *					m_texture_diffuse;				//diffuse texture
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>   m_terrainInputLayout;

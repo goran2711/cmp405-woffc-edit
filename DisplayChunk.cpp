@@ -42,12 +42,19 @@ void DisplayChunk::PopulateChunkData(ChunkObject * SceneChunk)
 	m_tex_splat_4_tiling = SceneChunk->tex_splat_4_tiling;
 }
 
-void DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources)
+void DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources, bool projectiveTexturing)
 {
 	auto context = DevResources->GetD3DDeviceContext();
 
-	m_terrainEffect->Apply(context);
-	context->IASetInputLayout(m_terrainInputLayout.Get());
+    if (projectiveTexturing)
+    {
+
+    }
+    else
+    {
+        m_terrainEffect->Apply(context);
+        context->IASetInputLayout(m_terrainInputLayout.Get());
+    }
 
 	m_batch->Begin();
 	for (size_t i = 0; i < TERRAINRESOLUTION-1; i++)	//looping through QUADS.  so we subtrack one from the terrain array or it will try to draw a quad starting with the last vertex in each row. Which wont work

@@ -208,11 +208,17 @@ void Game::Update(DX::StepTimer const& timer)
 
 void Game::PostProcess(ID3D11DeviceContext* context)
 {
+    D3D11_VIEWPORT viewport = m_deviceResources->GetScreenViewport();
+    RECT fullscreenRect{ 0, 0, viewport.Width, viewport.Height };
+
+    // Blend in the terrain w/ projected texture on it
+    m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive());
+    m_sprites->Draw(m_rt3SRV.Get(), fullscreenRect);
+    m_sprites->End();
+
     // Selection highlighting
     if (!m_selectionIDs.empty())
     {
-        D3D11_VIEWPORT viewport = m_deviceResources->GetScreenViewport();
-        RECT fullscreenRect{ 0, 0, viewport.Width, viewport.Height };
         RECT quarterRect{ 0, 0, viewport.Width / 4, viewport.Height / 4 };
         D3D11_VIEWPORT quarterViewport{ 0, 0, quarterRect.right, quarterRect.bottom, viewport.MinDepth, viewport.MaxDepth };
 
@@ -241,7 +247,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
         // Render the blurred texture on top of the already rendered screen (with additive blending) while respecting the stencil buffer
-        m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]()
+        m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
         {
             // Do not blend the blurred texture with the areas occupied by a selected object
             context->OMSetDepthStencilState(m_stencilTestState.Get(), STENCIL_SELECTED_OBJECT);
@@ -363,6 +369,14 @@ void Game::Render()
     context->OMSetDepthStencilState(m_stencilReplaceStateTerrain.Get(), STENCIL_TERRAIN);
 
 	m_displayChunk.RenderBatch(m_deviceResources);
+
+
+    // Render terrain again, but this time with projective texturing
+    context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
+    context->OMSetDepthStencilState(m_states->DepthRead(), 0);
+
+    m_displayChunk.RenderBatch(m_deviceResources, true);
+
 
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
@@ -1157,6 +1171,13 @@ void Game::CreateWindowSizeDependentResources()
     device->CreateTexture2D(&rtDesc, nullptr, rtTexture2.ReleaseAndGetAddressOf());
     device->CreateRenderTargetView(rtTexture2.Get(), nullptr, m_rt2RTV.ReleaseAndGetAddressOf());
     device->CreateShaderResourceView(rtTexture2.Get(), nullptr, m_rt2SRV.ReleaseAndGetAddressOf());
+
+    // Another FULL SIZE render target
+    ComPtr<ID3D11Texture2D> rtTexture3;
+    device->CreateTexture2D(&sceneDesc, nullptr, rtTexture3.ReleaseAndGetAddressOf());
+    device->CreateRenderTargetView(rtTexture3.Get(), nullptr, m_rt3RTV.ReleaseAndGetAddressOf());
+    device->CreateShaderResourceView(rtTexture3.Get(), nullptr, m_rt3SRV.ReleaseAndGetAddressOf());
+
 
     // Decal volume
     m_volumeDecal->SetPixelSize(m_deviceResources->GetD3DDeviceContext(), viewport.Width, viewport.Height);

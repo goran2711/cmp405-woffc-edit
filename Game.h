@@ -141,6 +141,10 @@ private:
     std::unique_ptr<DirectX::BasicPostProcess>                              m_blurPostProcess;
 
 
+    // Another render target (sheesh) for doing projective texturing on the terrain
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_rt3RTV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_rt3SRV;
+
 	// Basic effect without vertex colours
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPosition>>		m_pivotBatch;
 	std::unique_ptr<DirectX::BasicEffect>									m_pivotEffect;
