@@ -3,14 +3,7 @@
 #include "ConstantBuffer.h"
 #include <vector>
 
-class DecalMatrices : public DirectX::IEffectMatrices
-{
-public:
-    // NOTE: Don't need decal projection matrix since it's a cube (orthogonal) anyway (?)
-    virtual void XM_CALLCONV SetMatrices(DirectX::FXMMATRIX meshWorld, DirectX::CXMMATRIX decalWorld, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection) = 0;
-};
-
-class VolumeDecal : public DirectX::IEffect, public DecalMatrices
+class VolumeDecal : public DirectX::IEffect, public DirectX::IEffectMatrices
 {
 public:
     explicit VolumeDecal(ID3D11Device* device);
@@ -18,7 +11,10 @@ public:
     void __cdecl GetVertexShaderBytecode(_Out_ void const** pShaderByteCode, _Out_ size_t* pByteCodeLength) final;
 
     // DecalMatrices interface
-    void XM_CALLCONV SetMatrices(DirectX::FXMMATRIX meshWorld, DirectX::CXMMATRIX decalWorld, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection) final;
+    void XM_CALLCONV SetWorld(DirectX::FXMMATRIX value) final { m_matrices.world = value; }
+    void XM_CALLCONV SetView(DirectX::FXMMATRIX value) final { m_matrices.view = value; }
+    void XM_CALLCONV SetProjection(DirectX::FXMMATRIX value) final { m_matrices.projection = value; }
+    void XM_CALLCONV SetMatrices(DirectX::FXMMATRIX world, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection);
 
     //// VolumeDecal interface
 
@@ -32,7 +28,7 @@ public:
     // Unbinds the depth/stencil buffer from input and binds it to the render target again
     void Finish(ID3D11DeviceContext* context);
 
-    void SetScreenSize(ID3D11DeviceContext* context, float width, float height);
+    void SetPixelSize(ID3D11DeviceContext* context, float viewportWidth, float viewportHeight);
     void SetDecalTexture(ID3D11ShaderResourceView* decalTexture);
 
 private:
@@ -52,16 +48,16 @@ private:
     };
 
     __declspec(align(16))
-        struct ScreenSize
+        struct FixedBuffer
     {
-        float width, height;
+        float pixelSizeX, pixelSizeY;
     };
 
     // Constant buffers
     DecalMatrices   m_matrices;
     ConstantBuffer<DecalMatrices>   m_matrixBuffer;
 
-    ConstantBuffer<ScreenSize>    m_screenSizeBuffer;
+    ConstantBuffer<FixedBuffer>    m_fixedBuffer;
 
     // Textures
     ID3D11ShaderResourceView*   m_decal = nullptr;

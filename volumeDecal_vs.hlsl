@@ -4,7 +4,8 @@ cbuffer Matrices : register(b0)
     row_major matrix view;
     row_major matrix projection;
 
-    row_major matrix screenToLocal;
+    row_major matrix screenToWorld;
+    row_major matrix worldToProjectorUV;
 };
 
 // DirectX::GeometricPrimitive::VertexType (aka. DirectX::VertexPositionNormalTexture)

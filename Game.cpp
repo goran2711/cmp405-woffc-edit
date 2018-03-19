@@ -7,6 +7,7 @@
 #include "DisplayObject.h"
 #include <string>
 #include "ReadData.h"
+#include <WICTextureLoader.h>
 
 using namespace DirectX;
 //using namespace DirectX::SimpleMath;
@@ -390,6 +391,24 @@ void Game::Render()
 
     // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
     m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
+
+    //// FIX: Volume decal experiments--didn't work..
+    //m_volumeDecal->SetMatrices(XMMatrixScaling(3.f, 5.f, 3.f) * XMMatrixTranslation(0.f, 2.f, 0.f), m_view, m_projection);
+
+    //m_volumeDecal->Prepare(context);
+    //m_volumeDecal->Apply(context, m_deviceResources->GetDepthStencilShaderResourceView());
+
+    //m_decalCube->Draw(m_volumeDecal.get(), m_volumeDecalInputLayout.Get(), true, false, [&]
+    //{
+    //    ID3D11SamplerState* samplers[] = { m_states->PointClamp(), m_linearBorderSS.Get() };
+    //    context->PSSetSamplers(0, 2, samplers);
+
+    //    // NOTE: Probably unnecessary since depth/stencil buffer is not bound
+    //    context->OMSetDepthStencilState(m_states->DepthNone(), 0);
+    //});
+
+    //context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    //m_volumeDecal->Finish(context);
 
     PostProcess(context);
 
@@ -1016,6 +1035,16 @@ void Game::CreateDeviceDependentResources()
     m_blurPostProcess = std::make_unique<BasicPostProcess>(m_deviceResources->GetD3DDevice());
 
     m_depthSampler = std::make_unique<DepthSampler>(m_deviceResources->GetD3DDevice(), m_deviceResources->GetDepthBufferFormat());
+    m_volumeDecal = std::make_unique<VolumeDecal>(m_deviceResources->GetD3DDevice());
+
+    m_decalCube = GeometricPrimitive::CreateCube(m_deviceResources->GetD3DDeviceContext());
+    m_decalCube->CreateInputLayout(m_volumeDecal.get(), m_volumeDecalInputLayout.ReleaseAndGetAddressOf());
+
+    // Load decal texture
+    // FIX: Figure out how to load in my own texture
+    //DX::ThrowIfFailed(
+    //    CreateDDSTextureFromFile(device, L"brush_marker.dds", nullptr, m_brushMarkerDecalSRV.ReleaseAndGetAddressOf())
+    //);
 
 	m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
 
@@ -1064,6 +1093,14 @@ void Game::CreateDeviceDependentResources()
 
 	CD3D11_SHADER_RESOURCE_VIEW_DESC selSRVdesc(D3D11_SRV_DIMENSION_TEXTURE2D, selBoxTexDesc.Format);
 	device->CreateShaderResourceView(selectionTex.Get(), &selSRVdesc, m_selectionBoxTexture.ReleaseAndGetAddressOf());
+
+    // Set decal texture
+    m_volumeDecal->SetDecalTexture(m_texture1.Get());
+
+    static constexpr float transparentBlack[] = { 0.f, 0.f, 0.f, 0.f };
+    CD3D11_SAMPLER_DESC ssDesc(D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER,
+                               0, 1, D3D11_COMPARISON_NEVER, transparentBlack, -FLT_MAX, FLT_MAX);
+    device->CreateSamplerState(&ssDesc, m_linearBorderSS.ReleaseAndGetAddressOf());
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -1120,6 +1157,9 @@ void Game::CreateWindowSizeDependentResources()
     device->CreateTexture2D(&rtDesc, nullptr, rtTexture2.ReleaseAndGetAddressOf());
     device->CreateRenderTargetView(rtTexture2.Get(), nullptr, m_rt2RTV.ReleaseAndGetAddressOf());
     device->CreateShaderResourceView(rtTexture2.Get(), nullptr, m_rt2SRV.ReleaseAndGetAddressOf());
+
+    // Decal volume
+    m_volumeDecal->SetPixelSize(m_deviceResources->GetD3DDeviceContext(), viewport.Width, viewport.Height);
 }
 
 void Game::OnDeviceLost()

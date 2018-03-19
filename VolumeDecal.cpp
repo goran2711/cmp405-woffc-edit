@@ -20,7 +20,7 @@ VolumeDecal::VolumeDecal(ID3D11Device* device)
     m_vertexShaderBytecode.length = m_vertexShaderBlob.size();
 
     // Create constat buffers
-    m_screenSizeBuffer.Create(device);
+    m_fixedBuffer.Create(device);
     m_matrixBuffer.Create(device);
 }
 
@@ -63,7 +63,7 @@ void VolumeDecal::Apply(ID3D11DeviceContext* context)
 
     context->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOfBuffer());
 
-    ID3D11Buffer* psConstBuffers[] = { m_matrixBuffer.GetBuffer(), m_screenSizeBuffer.GetBuffer() };
+    ID3D11Buffer* psConstBuffers[] = { m_matrixBuffer.GetBuffer(), m_fixedBuffer.GetBuffer() };
     context->PSSetConstantBuffers(0, 2, psConstBuffers);
 
 }
@@ -74,7 +74,7 @@ void VolumeDecal::GetVertexShaderBytecode(void const ** pShaderByteCode, size_t 
     *pByteCodeLength = m_vertexShaderBytecode.length;
 }
 
-void XM_CALLCONV VolumeDecal::SetMatrices(DirectX::FXMMATRIX meshWorld, DirectX::CXMMATRIX decalWorld, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection)
+void XM_CALLCONV VolumeDecal::SetMatrices(DirectX::FXMMATRIX world, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection)
 {
     // Create a matrix that transforms a screen-space coordinate to decal volume's UV space
     static const XMMATRIX texToClip = XMMatrixSet(
@@ -85,21 +85,21 @@ void XM_CALLCONV VolumeDecal::SetMatrices(DirectX::FXMMATRIX meshWorld, DirectX:
     );
 
     XMMATRIX invViewProjection = XMMatrixInverse(nullptr, view * projection);
-    XMMATRIX screenToLocal = texToClip * invViewProjection * decalWorld;
+    XMMATRIX screenToLocal = texToClip * invViewProjection * world;
 
     m_matrices = {
-        meshWorld,
+        world,
         view,
         projection,
         screenToLocal
     };
 }
 
-void VolumeDecal::SetScreenSize(ID3D11DeviceContext* context, float width, float height)
+void VolumeDecal::SetPixelSize(ID3D11DeviceContext* context, float viewportWidth, float viewportHeight)
 {
     // Set the buffer data immediately since it is not supposed to change very often
-    ScreenSize screenSize{ width, height };
-    m_screenSizeBuffer.SetData(context, screenSize);
+    FixedBuffer pixelSize{ 1.f / viewportWidth, 1.f / viewportHeight };
+    m_fixedBuffer.SetData(context, pixelSize);
 }
 
 void VolumeDecal::SetDecalTexture(ID3D11ShaderResourceView * decalTexture)

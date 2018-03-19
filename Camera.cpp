@@ -43,6 +43,7 @@ void Camera::Update(const InputCommands & inputCommands)
 	//create right vector from look Direction
 	Vector3 right;
 	m_forward.Cross(Vector3::UnitY, right);
+    right.Normalize();
 
 	//process input and update stuff
 	if (inputCommands.forward)

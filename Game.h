@@ -19,6 +19,7 @@
 #include "PostProcess.h"
 
 #include "DepthSampler.h"
+#include "VolumeDecal.h"
 
 
 // A basic game implementation that creates a D3D11 device and
@@ -111,7 +112,14 @@ private:
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceStateTerrain;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestStateTerrain;
 
+    // Terrain brush shenanigans
     std::unique_ptr<DepthSampler>                                           m_depthSampler;
+    std::unique_ptr<VolumeDecal>                                            m_volumeDecal;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout>                               m_volumeDecalInputLayout;
+    std::unique_ptr<DirectX::GeometricPrimitive>                            m_decalCube;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_brushMarkerDecalSRV;
+
+    Microsoft::WRL::ComPtr<ID3D11SamplerState>                              m_linearBorderSS;
 
 	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
 	std::map<std::wstring, std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;

@@ -7,9 +7,9 @@ cbuffer Matrices : register(b0)
     row_major matrix screenToLocal;
 };
 
-cbuffer ScreenSize : register(b1)
+cbuffer FixedBuffer : register(b1)
 {
-    float2 screenSize;
+    float2 pixelSize;
 };
 
 struct VSOutput
@@ -25,8 +25,8 @@ SamplerState decalSampler : register(s1);
 
 float4 main(VSOutput input) : SV_Target
 {
-    // Convert from NDC to screen space
-    float2 texCoord = input.position.xy * screenSize;
+    // Compute normalized screen position (SV_POSITION is in screen coordinates, pixelSize is (1 / screenDim))
+    float2 texCoord = input.position.xy * pixelSize;
 
     // Sample the depth buffer at this point
     float depth = depthTexture.Sample(depthSampler, texCoord).r;
