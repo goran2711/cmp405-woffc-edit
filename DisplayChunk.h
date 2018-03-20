@@ -3,8 +3,6 @@
 #include "DeviceResources.h"
 #include "ChunkObject.h"
 
-#include "ProjectiveTexturingEffect.h"
-
 
 //geometric resoltuion - note,  hard coded.
 #define TERRAINRESOLUTION 128
@@ -23,11 +21,9 @@ public:
 	void GenerateHeightmap();		//creates or alters the heightmap
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionNormalTexture>>  m_batch;
 	std::unique_ptr<DirectX::BasicEffect>       m_terrainEffect;
-    std::unique_ptr<ProjectiveTexturingEffect>   m_projectiveTexturingEffect;
 
 	ID3D11ShaderResourceView *					m_texture_diffuse;				//diffuse texture
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>   m_terrainInputLayout;
-    Microsoft::WRL::ComPtr<ID3D11InputLayout>   m_projectiveTexturingInputLayout;
 
 
 private:

@@ -72,7 +72,7 @@
     <ClCompile Include="CustomEffect.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="ProjectiveTexturingEffect.cpp" />
+    <ClCompile Include="DecalEffect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeviceResources.h">
@@ -138,7 +138,7 @@
     <ClInclude Include="CustomEffect.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="ProjectiveTexturingEffect.h" />
+    <ClInclude Include="DecalEffect.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Win32SimpleSample.rc">
@@ -178,10 +178,7 @@
     <FxCompile Include="volumeDecal_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="projectiveTexturing_ps.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="projectiveTexturing_vs.hlsl">
+    <FxCompile Include="decal_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

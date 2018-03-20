@@ -178,6 +178,7 @@ void Game::Update(DX::StepTimer const& timer)
 	m_batchEffect->SetView(m_view);
 	m_batchEffect->SetWorld(SimpleMath::Matrix::Identity);
 	m_displayChunk.m_terrainEffect->SetView(m_view);
+    m_displayChunk.m_terrainEffect->SetProjection(m_projection);
 	m_displayChunk.m_terrainEffect->SetWorld(SimpleMath::Matrix::Identity);
 
 
@@ -209,6 +210,65 @@ void Game::Update(DX::StepTimer const& timer)
 
 }
 
+void Game::RenderSceneGraph(ID3D11DeviceContext * context, FXMMATRIX view, CXMMATRIX projection)
+{
+    for (auto itModel = m_displayList.cbegin(); itModel != m_displayList.cend(); ++itModel)
+    {
+        auto model = itModel->m_model;
+        assert(model != nullptr);
+
+        m_deviceResources->PIXBeginEvent(L"Draw model");
+        const XMVECTORF32 scale = { itModel->m_scale.x, itModel->m_scale.y, itModel->m_scale.z };
+        const XMVECTORF32 translate = { itModel->m_position.x, itModel->m_position.y, itModel->m_position.z };
+
+        //convert degrees into radians for rotation matrix
+        XMVECTOR rotate = SimpleMath::Quaternion::CreateFromYawPitchRoll(XMConvertToRadians(itModel->m_orientation.y),
+                                                                         XMConvertToRadians(itModel->m_orientation.x),
+                                                                         XMConvertToRadians(itModel->m_orientation.z));
+
+        XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, SimpleMath::Quaternion::Identity, scale, g_XMZero, rotate, translate);
+
+        // First, render object normally
+        model->Draw(context, *m_states, local, view, projection, false);	// second to last variable in draw,  make TRUE for wireframe
+
+                                                                                // Render selected objects to the stencil buffer and to a separate render target in a flat colour
+        if (std::find(m_selectionIDs.cbegin(), m_selectionIDs.cend(), itModel->m_ID) != m_selectionIDs.cend())
+        {
+            // Change render target, but use the same depth/stencil buffer
+            context->OMSetRenderTargets(1, m_highlightRTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
+
+            m_highlightEffect->SetMatrices(local, view, projection);
+
+            int j = 0;
+            for (auto itMesh = model->meshes.cbegin(); itMesh != model->meshes.cend(); ++itMesh)
+            {
+                auto mesh = itMesh->get();
+                assert(mesh != 0);
+
+                mesh->PrepareForRendering(context, *m_states);
+
+                for (auto pit = mesh->meshParts.cbegin(); pit != mesh->meshParts.cend(); ++pit)
+                {
+                    auto part = pit->get();
+                    assert(part != 0);
+
+                    part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[mesh->name][j++].Get(), [&]
+                    {
+                        // Custom DSS so the mesh will be rendered to the stencil buffer also
+                        context->OMSetDepthStencilState(m_stencilReplaceState.Get(), STENCIL_SELECTED_OBJECT);
+                    });
+                }
+            }
+
+            // Reset render target
+            ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
+            context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
+        }
+
+        m_deviceResources->PIXEndEvent();
+    }
+}
+
 void Game::PostProcess(ID3D11DeviceContext* context)
 {
     D3D11_VIEWPORT viewport = m_deviceResources->GetScreenViewport();
@@ -217,13 +277,31 @@ void Game::PostProcess(ID3D11DeviceContext* context)
     // Projected texture / decal
     if (m_showTerrainBrush)
     {
-        // Blend in the terrain w/ projected texture on it
-        // FIX: Additive blending will not get me what I want here.
-        //      - If rt3 alpha is 1, use rt3 colour
-        //      - Otherwise, use destination (back buffer) colour
-        m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive());
+        ID3D11RenderTargetView* defaultRTV = m_deviceResources->GetBackBufferRenderTargetView();
+        context->OMSetRenderTargets(1, &defaultRTV, nullptr);
+
+        m_decalMatrices.invViewProjection = XMMatrixInverse(nullptr, m_view * m_projection);
+        m_decalMatrices.worldToProjectorClip = XMLoadFloat4x4(&m_projectorView) * XMLoadFloat4x4(&m_projectorProjection);
+
+        m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
+        {
+            // TODO: Set const buffers
+            m_decalMatrixBuffer.SetData(context, m_decalMatrices);
+
+            context->PSSetConstantBuffers(0, 1, m_decalMatrixBuffer.GetAddressOfBuffer());
+
+            context->PSSetShader(m_decalPixelShader.Get(), nullptr, 0);
+
+            ID3D11ShaderResourceView* textures[] = { m_projectorSRV.Get(), m_deviceResources->GetDepthStencilShaderResourceView(), m_brushMarkerDecalSRV.Get() };
+            context->PSSetShaderResources(0, 3, textures);
+        });
         m_sprites->Draw(m_rt3SRV.Get(), fullscreenRect);
         m_sprites->End();
+
+        ID3D11ShaderResourceView* nullSRVs[] = { nullptr, nullptr, nullptr };
+        context->PSSetShaderResources(0, 3, nullSRVs);
+
+        context->OMSetRenderTargets(1, &defaultRTV, m_deviceResources->GetDepthStencilView());
     }
 
     // Selection highlighting
@@ -292,88 +370,19 @@ void Game::Render()
     }
 
     //RENDER OBJECTS FROM SCENEGRAPH
-    for (auto itModel = m_displayList.cbegin(); itModel != m_displayList.cend(); ++itModel)
-    {
-        auto model = itModel->m_model;
-        assert(model != nullptr);
-
-        m_deviceResources->PIXBeginEvent(L"Draw model");
-        const XMVECTORF32 scale = { itModel->m_scale.x, itModel->m_scale.y, itModel->m_scale.z };
-        const XMVECTORF32 translate = { itModel->m_position.x, itModel->m_position.y, itModel->m_position.z };
-
-        //convert degrees into radians for rotation matrix
-        XMVECTOR rotate = SimpleMath::Quaternion::CreateFromYawPitchRoll(XMConvertToRadians(itModel->m_orientation.y),
-                                                                         XMConvertToRadians(itModel->m_orientation.x),
-                                                                         XMConvertToRadians(itModel->m_orientation.z));
-
-        XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, SimpleMath::Quaternion::Identity, scale, g_XMZero, rotate, translate);
-
-        // First, render object normally
-        model->Draw(context, *m_states, local, m_view, m_projection, false);	// second to last variable in draw,  make TRUE for wireframe
-
-        // Render selected objects to the stencil buffer and to a separate render target in a flat colour
-        if (std::find(m_selectionIDs.cbegin(), m_selectionIDs.cend(), itModel->m_ID) != m_selectionIDs.cend())
-        {
-            // Change render target, but use the same depth/stencil buffer
-            context->OMSetRenderTargets(1, m_highlightRTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-
-            m_highlightEffect->SetMatrices(local, m_view, m_projection);
-
-            int j = 0;
-            for (auto itMesh = model->meshes.cbegin(); itMesh != model->meshes.cend(); ++itMesh)
-            {
-                auto mesh = itMesh->get();
-                assert(mesh != 0);
-
-                mesh->PrepareForRendering(context, *m_states);
-
-                for (auto pit = mesh->meshParts.cbegin(); pit != mesh->meshParts.cend(); ++pit)
-                {
-                    auto part = pit->get();
-                    assert(part != 0);
-
-                    part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[mesh->name][j++].Get(), [&]
-                    {
-                        // Custom DSS so the mesh will be rendered to the stencil buffer also
-                        context->OMSetDepthStencilState(m_stencilReplaceState.Get(), STENCIL_SELECTED_OBJECT);
-                    });
-                }
-            }
-
-            // Reset render target
-            ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
-            context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
-        }
-
-        //	//// TODO: Geometry shader to render pivot point
-        //	//context->RSSetState(m_states->CullCounterClockwise());
-        //	//context->GSSetShader(m_pivotGeometryShader.Get(), nullptr, 0);
-        //	//m_pivotEffect->SetMatrices(local, m_view, m_projection);
-        //	//m_pivotEffect->Apply(context);
-        //	//// Render the pivot point
-        //	//m_pivotBatch->Begin();
-        //	//m_pivotBatch->Draw(D3D_PRIMITIVE_TOPOLOGY_POINTLIST, &DirectX::VertexPosition(itModel->m_position), 1);
-        //	//m_pivotBatch->End();
-
-        //	//// Unbind geometry shader
-        //	//context->GSSetShader(nullptr, nullptr, 0);
-        //}
-
-        m_deviceResources->PIXEndEvent();
-    }
+    RenderSceneGraph(context, m_view, m_projection);
     m_deviceResources->PIXEndEvent();
 
     //RENDER TERRAIN
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
-    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    // Imprint the terrain onto the stencil buffer
+    context->OMSetDepthStencilState(m_stencilReplaceStateTerrain.Get(), STENCIL_TERRAIN);
     context->RSSetState(m_states->CullNone());
 
     ID3D11SamplerState* samplers[] = { m_states->AnisotropicWrap() };
     context->PSSetSamplers(0, 1, samplers);
 
     //Render the batch,  This is handled in the Display chunk becuase it has the potential to get complex
-    // NOTE: Assuming PrimitiveBatch doesn't mess with states
-    context->OMSetDepthStencilState(m_stencilReplaceStateTerrain.Get(), STENCIL_TERRAIN);
 
     m_displayChunk.RenderBatch(m_deviceResources);
 
@@ -397,37 +406,54 @@ void Game::Render()
 
 
         /////////////////////// Render terrain again, but this time with projective texturing
-        context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-        context->OMSetDepthStencilState(m_stencilTestStateTerrain.Get(), STENCIL_TERRAIN);
-
-        context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
 
         // Projector position a little bit above the area the mouse is hovering over
-        XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 4.f, 0.f, 1.f); // wsCoord + XMVectorSet(0.f, 1.f, 0.f, 0.f);
+        XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f); // wsCoord + XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
         // Projector is focusing on a point below it (towards terrain)
         XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
         XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
 
         // Use orthogoraphic projection
-        XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.1f, 10.f);
+        XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.01f, 100.f);
 
-        // Matrix for transforming homogenous clip space to UV space
-        static const XMMATRIX toUV(
-            0.5f, 0.f, 0.f, 0.f,
-            0.f, -0.5f, 0.f, 0.f,
-            0.f, 0.f, 1.f, 0.f,
-            0.5f, 0.5f, 0.f, 1.f
-        );
+        XMStoreFloat4x4(&m_projectorView, projectorView);
+        XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
 
-        XMMATRIX projectorTransform = projectorView * projectorProjection * toUV;
+        //// Matrix for transforming homogenous clip space to UV space
+        //static const XMMATRIX toUV(
+        //    0.5f, 0.f, 0.f, 0.f,
+        //    0.f, -0.5f, 0.f, 0.f,
+        //    0.f, 0.f, 1.f, 0.f,
+        //    0.5f, 0.5f, 0.f, 1.f
+        //);
 
-        m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorTransform);
+        //XMMATRIX projectorTransform = projectorView * projectorProjection * toUV;
 
+
+        // Render terrain to depth buffer from POV of projector
+        ID3D11RenderTargetView* nullRTV = nullptr;
+        context->OMSetRenderTargets(1, &nullRTV, m_projectorDSV.Get());
+
+        m_displayChunk.m_terrainEffect->SetView(projectorView);
+        m_displayChunk.m_terrainEffect->SetProjection(projectorProjection);
         m_displayChunk.RenderBatch(m_deviceResources, true);
 
-        ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
-        context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
+        ID3D11RenderTargetView* defaultRTV = m_deviceResources->GetBackBufferRenderTargetView();
+        context->OMSetRenderTargets(1, &defaultRTV, m_deviceResources->GetDepthStencilView());
+
+        /// OLD Code using my hacky decal technique
+        //context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
+        //context->OMSetDepthStencilState(m_stencilTestStateTerrain.Get(), STENCIL_TERRAIN);
+
+        //context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
+
+        //m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorTransform);
+
+        //m_displayChunk.RenderBatch(m_deviceResources, true);
+
+        //ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
+        //context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
     }
 
@@ -507,6 +533,9 @@ void Game::Clear()
     context->ClearRenderTargetView(m_rt1RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt2RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt3RTV.Get(), XMVectorSet(0.f, 0.f, 0.f, 0.f).m128_f32);
+
+    context->ClearDepthStencilView(m_projectorDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
 
 	// Set the viewport.
 	auto viewport = m_deviceResources->GetScreenViewport();
@@ -721,7 +750,6 @@ void Game::BuildDisplayChunk(ChunkObject * SceneChunk)
 	m_displayChunk.PopulateChunkData(SceneChunk);		//migrate chunk data
 	m_displayChunk.LoadHeightMap(m_deviceResources);
 	m_displayChunk.m_terrainEffect->SetProjection(m_projection);
-    m_displayChunk.m_projectiveTexturingEffect->SetDecalTexture(m_brushMarkerDecalSRV.Get());
 	m_displayChunk.InitialiseBatch();
 }
 
@@ -1152,6 +1180,14 @@ void Game::CreateDeviceDependentResources()
     CD3D11_SAMPLER_DESC ssDesc(D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER,
                                0, 1, D3D11_COMPARISON_NEVER, transparentBlack, -FLT_MAX, FLT_MAX);
     device->CreateSamplerState(&ssDesc, m_linearBorderSS.ReleaseAndGetAddressOf());
+
+
+    // Create pixel shader for decaling
+    auto decalPSBlob = DX::ReadData(L"decal_ps.cso");
+
+    device->CreatePixelShader(decalPSBlob.data(), decalPSBlob.size(), nullptr, m_decalPixelShader.ReleaseAndGetAddressOf());
+
+    m_decalMatrixBuffer.Create(device);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -1218,6 +1254,19 @@ void Game::CreateWindowSizeDependentResources()
 
     // Decal volume
     m_volumeDecal->SetPixelSize(m_deviceResources->GetD3DDeviceContext(), viewport.Width, viewport.Height);
+
+
+    // Create depth stencil buffer for use with projecting decals onto the terrain
+    CD3D11_TEXTURE2D_DESC depthTexDesc(DXGI_FORMAT_R24G8_TYPELESS, viewport.Width, viewport.Height, 1, 0, D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE);
+
+    ComPtr<ID3D11Texture2D> depthTex;
+    device->CreateTexture2D(&depthTexDesc, nullptr, depthTex.ReleaseAndGetAddressOf());
+
+    CD3D11_SHADER_RESOURCE_VIEW_DESC depthSRVDesc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
+    device->CreateShaderResourceView(depthTex.Get(), &depthSRVDesc, m_projectorSRV.ReleaseAndGetAddressOf());
+
+    CD3D11_DEPTH_STENCIL_VIEW_DESC depthDSVDesc(D3D11_DSV_DIMENSION_TEXTURE2D, DXGI_FORMAT_D24_UNORM_S8_UINT);
+    device->CreateDepthStencilView(depthTex.Get(), &depthDSVDesc, m_projectorDSV.ReleaseAndGetAddressOf());
 }
 
 void Game::OnDeviceLost()

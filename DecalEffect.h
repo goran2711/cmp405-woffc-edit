@@ -1,23 +1,24 @@
 #pragma once
 #include "CustomEffect.h"
 
-class ProjectiveTexturingEffect : public CustomEffect
+class DecalEffect : public CustomEffect
 {
 public:
-    explicit ProjectiveTexturingEffect(ID3D11Device* device);
+    explicit DecalEffect(ID3D11Device* device);
 
-    void Apply(ID3D11DeviceContext* context) final;
+    void Apply(ID3D11DeviceContext* context, ID3D11ShaderResourceView* projectorDepthTexture, ID3D11ShaderResourceView* decalTexture);
 
     // IEffectMatrices interface
     void XM_CALLCONV SetWorld(FXMMATRIX value) final;
     void XM_CALLCONV SetView(FXMMATRIX value) final;
     void XM_CALLCONV SetProjection(FXMMATRIX value) final;
-    void XM_CALLCONV SetProjectorViewProjection(FXMMATRIX value);
-    void XM_CALLCONV SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection, FXMMATRIX projectorViewProjection);
-
-    void SetDecalTexture(ID3D11ShaderResourceView* decalTexture);
+    void XM_CALLCONV SetWorldToProjectorClip(FXMMATRIX value);
+    void XM_CALLCONV SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection, FXMMATRIX worldToProjectorClip);
 
 private:
+    // Hide CustomEffect interface
+    using CustomEffect::Apply;
+
     void XM_CALLCONV SetMatrices(FXMMATRIX world, CXMMATRIX view, CXMMATRIX projection) final;
 
     __declspec(align(16))
@@ -26,7 +27,7 @@ private:
         XMMATRIX world;
         XMMATRIX view;
         XMMATRIX projection;
-        XMMATRIX projectorViewProjection;
+        XMMATRIX worldToProjectorClip;
     } m_matrices;
     ConstantBuffer<MatrixBuffer>    m_matrixBuffer;
 

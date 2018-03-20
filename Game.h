@@ -93,6 +93,7 @@ private:
 
 	void Update(DX::StepTimer const& timer);
 
+    void XM_CALLCONV RenderSceneGraph(ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection);
     void PostProcess(ID3D11DeviceContext* context);
 
 	void CreateDeviceDependentResources();
@@ -131,6 +132,23 @@ private:
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_brushMarkerDecalSRV;
     Microsoft::WRL::ComPtr<ID3D11SamplerState>                              m_linearBorderSS;
 
+
+    Microsoft::WRL::ComPtr<ID3D11PixelShader>                               m_decalPixelShader;
+
+    __declspec(align(16))
+        struct DecalMatrixBuffer
+    {
+        XMMATRIX invViewProjection;
+        XMMATRIX worldToProjectorClip;
+    } m_decalMatrices;
+
+    XMFLOAT4X4 m_projectorView, m_projectorProjection;
+
+    ConstantBuffer<DecalMatrixBuffer>                                       m_decalMatrixBuffer;
+
+
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>                          m_projectorDSV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_projectorSRV;
 
     // Selection highlighting
 	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
