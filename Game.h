@@ -21,12 +21,20 @@
 #include "DepthSampler.h"
 #include "VolumeDecal.h"
 
+// TODO: Sampling the depth buffer should ignore objects
+//       - If possible, DepthSampler could output depth to one channel, and stencil value in another--then I could check stencil values on the CPU
+//       - Find some other way to make a compute shader respect the stencil buffer ...
+
+
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game : public DX::IDeviceNotify
 {
     constexpr static uint32_t STENCIL_SELECTED_OBJECT   = (1 << 0);
     constexpr static uint32_t STENCIL_TERRAIN           = (1 << 1);
+
+    // Perhaps this should be variable (proportional to brush width, for instance)
+    constexpr static float BRUSH_DECAL_DIMENSIONS       = 8.f;
 
 public:
 	enum PickingMode
@@ -75,12 +83,11 @@ public:
 	bool Pick(POINT cursorPos, RECT clientRect, int& id) const;
 	bool PickWithinScreenRectangle(RECT selectionRect, std::vector<int>& selections, PickingMode invert = PICK_NORMAL) const;
 
+    void SetBrushActive(bool val);
+
 #ifdef DXTK_AUDIO
 	void NewAudioDevice();
 #endif
-
-	// Properties
-	//void GetDefaultSize(int& width, int& height) const;
 
 private:
 
@@ -103,6 +110,8 @@ private:
 	std::vector<DisplayObject>			m_displayList;
 	DisplayChunk						m_displayChunk;
 	InputCommands						inputCommands;
+    
+    bool m_showTerrainBrush = false;
 
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceState;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestState;
@@ -113,13 +122,13 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D11BlendState>                                m_terrainDecalBlendState;
 
-    // Terrain brush shenanigans
+    // Terrain brush shenanigans (that did not work--GPU Pro 2 Volume Decal)
     std::unique_ptr<DepthSampler>                                           m_depthSampler;
     std::unique_ptr<VolumeDecal>                                            m_volumeDecal;
     Microsoft::WRL::ComPtr<ID3D11InputLayout>                               m_volumeDecalInputLayout;
     std::unique_ptr<DirectX::GeometricPrimitive>                            m_decalCube;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_brushMarkerDecalSRV;
 
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_brushMarkerDecalSRV;
     Microsoft::WRL::ComPtr<ID3D11SamplerState>                              m_linearBorderSS;
 
 

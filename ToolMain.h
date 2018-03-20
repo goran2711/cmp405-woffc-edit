@@ -46,6 +46,8 @@ public: //methods
 
     void    UpdateDisplayObject(SceneObject* sceneObject);
 
+    void    ToggleBrush();
+
 public:	//variables
 	std::vector<SceneObject>    m_sceneGraph;	//our scenegraph storing all the objects in the current chunk
 
@@ -104,4 +106,6 @@ private:	//variables
 	bool m_dragging = false;
 	POINT m_beginDragPos;
 	POINT m_currentDragPos;
+
+    bool m_brushActive = false;
 };

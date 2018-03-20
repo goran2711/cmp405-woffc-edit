@@ -325,7 +325,7 @@ void ToolMain::Tick(MSG *msg)
         SetCursorPos(clientCenterScreen.x, clientCenterScreen.y);
     }
 
-    // TODO: if dragging mouse
+    // If the user is clicking and dragging (creating a selection box)
     if (m_dragging)
     {
         m_toolInputCommands.selectionRectangleBegin = { m_beginDragPos.x, m_beginDragPos.y };
@@ -361,6 +361,13 @@ SceneObject * ToolMain::GetObjectFromID(int id)
 void ToolMain::UpdateDisplayObject(SceneObject * sceneObject)
 {
     m_d3dRenderer.UpdateDisplayListItem(*sceneObject);
+}
+
+void ToolMain::ToggleBrush()
+{
+    m_brushActive = !m_brushActive;
+
+    m_d3dRenderer.SetBrushActive(m_brushActive);
 }
 
 bool ToolMain::UpdateInput(MSG * msg)
@@ -593,8 +600,13 @@ void ToolMain::captureMouse(bool val, bool forFPSCamera)
     // Show/hide cursor
     ShowCursor(!m_cursorCaptured);
 
+    // Capture cursor
     if (m_cursorCaptured)
     {
+        // Disable the brush if it is active
+        if (m_brushActive)
+            ToggleBrush();
+
         // Lock the cursor to the dx render area
         ClipCursor(&m_windowRect);
 
@@ -611,6 +623,7 @@ void ToolMain::captureMouse(bool val, bool forFPSCamera)
         // Overwrite the mouse coordinates found in input handling to avoid snapping
         m_cursorPos = m_clientCenter;
     }
+    // Release cursor
     else
     {
         // Move the cursor back where we found it
