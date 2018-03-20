@@ -382,13 +382,13 @@ void Game::Render()
     // Sampling depth shenanigans
     if (m_showTerrainBrush)
     {
+        // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
+        m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
+
         m_depthSampler->ReadDepthValue(context);
 
         float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
         XMVECTOR wsCoord = m_depthSampler->GetWorldSpaceCoordinate(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
-
-        // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
-        m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
 
 
 
@@ -407,7 +407,6 @@ void Game::Render()
 
         // Projector is focusing on a point below it (towards terrain)
         XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
-
         XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
 
         // Use orthogoraphic projection
@@ -437,6 +436,7 @@ void Game::Render()
 
 
     //// FIX: Volume decal experiments--didn't work..
+	//        ! Issue when I tried doing my own spin on this might have been the UP vector (should be (0,0,1), not (0,1,0))
     //m_volumeDecal->SetMatrices(XMMatrixScaling(3.f, 5.f, 3.f) * XMMatrixTranslation(0.f, 2.f, 0.f), m_view, m_projection);
 
     //m_volumeDecal->Prepare(context);
@@ -721,7 +721,7 @@ void Game::BuildDisplayChunk(ChunkObject * SceneChunk)
 	m_displayChunk.PopulateChunkData(SceneChunk);		//migrate chunk data
 	m_displayChunk.LoadHeightMap(m_deviceResources);
 	m_displayChunk.m_terrainEffect->SetProjection(m_projection);
-    m_displayChunk.m_projectiveTexturingEffect->SetDecalTexture(m_texture2.Get());
+    m_displayChunk.m_projectiveTexturingEffect->SetDecalTexture(m_brushMarkerDecalSRV.Get());
 	m_displayChunk.InitialiseBatch();
 }
 
@@ -1093,9 +1093,9 @@ void Game::CreateDeviceDependentResources()
 
     // Load decal texture
     // FIX: Figure out how to load in my own texture
-    //DX::ThrowIfFailed(
-    //    CreateDDSTextureFromFile(device, L"brush_marker.dds", nullptr, m_brushMarkerDecalSRV.ReleaseAndGetAddressOf())
-    //);
+    DX::ThrowIfFailed(
+		CreateDDSTextureFromFile(device, L"database/data/brush_marker.dds", nullptr, m_brushMarkerDecalSRV.ReleaseAndGetAddressOf())
+    );
 
 	m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
 
@@ -1132,12 +1132,12 @@ void Game::CreateDeviceDependentResources()
 
 
 	// Create a 1x1 texture for selection box
-	CD3D11_TEXTURE2D_DESC selBoxTexDesc(DXGI_FORMAT_R8G8B8A8_UNORM, 1U, 1U, 1U, 0U, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_IMMUTABLE);
+	CD3D11_TEXTURE2D_DESC selBoxTexDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, 1U, 1U, 1U, 0U, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_IMMUTABLE);
 
-    PackedVector::XMCOLOR pixel(1.f, 0.f, 0.f, 0.f);
+    XMVECTOR pixel = XMVectorSet(1.f, 1.f, 0.f, 0.1f);
 	D3D11_SUBRESOURCE_DATA initialData;
-	initialData.pSysMem = &pixel.c;
-	initialData.SysMemPitch = sizeof(PackedVector::XMCOLOR);
+	initialData.pSysMem = &pixel.m128_f32;
+	initialData.SysMemPitch = sizeof(float) * 4;
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> selectionTex;
 	device->CreateTexture2D(&selBoxTexDesc, &initialData, selectionTex.ReleaseAndGetAddressOf());
@@ -1146,9 +1146,9 @@ void Game::CreateDeviceDependentResources()
 	device->CreateShaderResourceView(selectionTex.Get(), &selSRVdesc, m_selectionBoxTexture.ReleaseAndGetAddressOf());
 
     // Set decal texture
-    m_volumeDecal->SetDecalTexture(m_texture1.Get());
+    m_volumeDecal->SetDecalTexture(m_brushMarkerDecalSRV.Get());
 
-    static constexpr float transparentBlack[] = { 0.f, 0.f, 0.f, 1.f };
+    static constexpr float transparentBlack[] = { 0.f, 0.f, 0.f, 0.f };
     CD3D11_SAMPLER_DESC ssDesc(D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER,
                                0, 1, D3D11_COMPARISON_NEVER, transparentBlack, -FLT_MAX, FLT_MAX);
     device->CreateSamplerState(&ssDesc, m_linearBorderSS.ReleaseAndGetAddressOf());

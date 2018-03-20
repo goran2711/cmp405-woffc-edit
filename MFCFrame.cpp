@@ -6,6 +6,7 @@
 BEGIN_MESSAGE_MAP(CMyFrame, CFrameWnd)
 	ON_WM_CREATE()
     ON_WM_WINDOWPOSCHANGED()
+	ON_WM_SIZE()
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_TOOL, &CMyFrame::OnUpdatePage)
 END_MESSAGE_MAP()
 
@@ -68,6 +69,19 @@ int CMyFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndStatusBar.SetPaneInfo(1, ID_INDICATOR_TOOL, SBPS_NORMAL, rect.Width() - 500);//set width of status bar panel
 
 	return 0;
+}
+
+void CMyFrame::OnSize(UINT nType, int cx, int cy)
+{
+	CFrameWnd::OnSize(nType, cx, cy);
+
+	// Forward this message to the CChildRender
+	if (m_DirXView.toolSystem)
+	{
+		WPARAM wParam = nType;
+		LPARAM lParam = LOWORD(cx) | HIWORD(cy);
+		SendMessageA(m_DirXView.m_hWnd, WM_SIZE, wParam, lParam);
+	}
 }
 
 void CMyFrame::OnWindowPosChanged(WINDOWPOS* newPos)

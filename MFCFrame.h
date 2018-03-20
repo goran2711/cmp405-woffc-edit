@@ -28,6 +28,7 @@ private:	//overrides
 
 	//note the afx_message keyword is linking this method to message map access.
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnWindowPosChanged(WINDOWPOS* newPos);
 
 	DECLARE_MESSAGE_MAP()	// required macro for message map functionality  One per class

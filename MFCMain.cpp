@@ -131,6 +131,11 @@ void MFCMain::MenuEditTransform()
         MessageBox(m_toolHandle, L"No object selected", L"Error", MB_OK);
         return;
     }
+	else if (m_ToolSystem.m_selectedObjects.size() > 1)
+	{
+		MessageBox(m_toolHandle, L"Cannot yet manipulate multiple objects at once", L"Error", MB_OK);
+		return;
+	}
 
     m_transformDialogue.Create(IDD_DIALOG_TRANSFORM);
     m_transformDialogue.ShowWindow(SW_SHOW);

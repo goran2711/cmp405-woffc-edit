@@ -48,10 +48,15 @@ void CChildRender::OnPaint()
 
 void CChildRender::OnSize(UINT nType, int cx, int cy)
 {
-    CWnd::OnSize(nType, cx, cy);
+    //CWnd::OnSize(nType, cx, cy);
 
-    if (toolSystem)
-        toolSystem->OnResize(cx, cy);
+	if (toolSystem)
+	{
+		RECT clientRect;
+		GetClientRect(&clientRect);
+
+		toolSystem->OnResize(clientRect.right, clientRect.bottom);
+	}
 }
 
 void CChildRender::OnWindowPosChanged(WINDOWPOS*)
