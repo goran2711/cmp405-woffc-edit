@@ -392,17 +392,9 @@ void Game::Render()
 
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
-    // Sampling depth shenanigans
+    // Terrain brush decal
     if (m_showTerrainBrush)
     {
-        //// wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
-        //m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
-
-        //m_depthSampler->ReadDepthValue(context);
-
-        //float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
-        //XMVECTOR wsCoord = m_depthSampler->GetWorldSpaceCoordinate(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
-
         XMVECTOR wsCoord;
         if (m_displayChunk.CursorIntersectsTerrain(inputCommands.mouseX, inputCommands.mouseY, SimpleMath::Viewport(m_deviceResources->GetScreenViewport()), m_projection, m_view, m_world, wsCoord))
         {
@@ -421,7 +413,6 @@ void Game::Render()
             XMStoreFloat4x4(&m_projectorView, projectorView);
             XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
 
-
             // Render terrain to depth buffer from POV of projector
             ID3D11RenderTargetView* nullRTV = nullptr;
             context->OMSetRenderTargets(1, &nullRTV, m_projectorDSV.Get());
@@ -433,44 +424,9 @@ void Game::Render()
             ID3D11RenderTargetView* defaultRTV = m_deviceResources->GetBackBufferRenderTargetView();
             context->OMSetRenderTargets(1, &defaultRTV, m_deviceResources->GetDepthStencilView());
         }
-
-        /// OLD Code using my hacky decal technique
-        //context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-        //context->OMSetDepthStencilState(m_dssEqTerrain.Get(), STENCIL_TERRAIN);
-
-        //context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
-
-        //m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorTransform);
-
-        //m_displayChunk.RenderBatch(m_deviceResources, true);
-
-        //ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
-        //context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
-
     }
 
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-
-
-
-    //// FIX: Volume decal experiments--didn't work..
-	//        ! Issue when I tried doing my own spin on this might have been the UP vector (should be (0,0,1), not (0,1,0))
-    //m_volumeDecal->SetMatrices(XMMatrixScaling(3.f, 5.f, 3.f) * XMMatrixTranslation(0.f, 2.f, 0.f), m_view, m_projection);
-
-    //m_volumeDecal->Prepare(context);
-    //m_volumeDecal->Apply(context, m_deviceResources->GetDepthStencilShaderResourceView());
-
-    //m_decalCube->Draw(m_volumeDecal.get(), m_volumeDecalInputLayout.Get(), true, false, [&]
-    //{
-    //    ID3D11SamplerState* samplers[] = { m_states->PointClamp(), m_linearBorderSS.Get() };
-    //    context->PSSetSamplers(0, 2, samplers);
-
-    //    // NOTE: Probably unnecessary since depth/stencil buffer is not bound
-    //    context->OMSetDepthStencilState(m_states->DepthNone(), 0);
-    //});
-
-    //context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-    //m_volumeDecal->Finish(context);
 
     PostProcess(context);
 

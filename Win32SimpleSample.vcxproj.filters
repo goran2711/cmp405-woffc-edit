@@ -74,6 +74,7 @@
     </ClCompile>
     <ClCompile Include="DecalEffect.cpp" />
     <ClCompile Include="Octree.cpp" />
+    <ClCompile Include="BVH.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeviceResources.h">
@@ -141,6 +142,7 @@
     </ClInclude>
     <ClInclude Include="DecalEffect.h" />
     <ClInclude Include="Octree.h" />
+    <ClInclude Include="BVH.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Win32SimpleSample.rc">

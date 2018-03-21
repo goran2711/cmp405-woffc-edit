@@ -168,6 +168,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BVH.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ChunkObject.cpp" />
     <ClCompile Include="CustomEffect.cpp" />
@@ -192,6 +193,7 @@
     <ClCompile Include="VolumeDecal.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BVH.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ChunkObject.h" />
     <ClInclude Include="ConstantBuffer.h" />

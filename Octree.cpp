@@ -1,10 +1,11 @@
 #include "Octree.h"
 #include "VertexTypes.h"
+#include <queue>
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
-Octree::Octree(const DirectX::BoundingBox& rootBoundingBox, VertexPositionNormalTexture* vertices, size_t numVertices)
+Octree::Octree(const BoundingBox& rootBoundingBox, VertexPositionNormalTexture* vertices, size_t numVertices)
 {
     m_root.boundingBox = rootBoundingBox;
 
@@ -15,6 +16,11 @@ Octree::Octree(const DirectX::BoundingBox& rootBoundingBox, VertexPositionNormal
     //}
 }
 
+void Octree::Initialise(const BoundingBox& rootBoundingBox)
+{
+    m_root.boundingBox = rootBoundingBox;
+}
+
 void Octree::Insert(const Triangle& newTri)
 {
     Insert(m_root, newTri);
@@ -23,6 +29,68 @@ void Octree::Insert(const Triangle& newTri)
 void Octree::Build()
 {
     Build(m_root);
+}
+
+bool Octree::Intersects(const Ray& ray, Vector3& hit) const
+{
+    float dist;
+    if (!ray.Intersects(m_root.boundingBox, dist))
+        return false;
+
+    int triTests = 0;
+    int boxTests = 0;
+
+    std::queue<const Node*> candidates;
+    candidates.push(&m_root);
+
+    Vector3 nearestHit;
+    float minDist = FLT_MAX;
+    while (!candidates.empty())
+    {
+        const Node* node = candidates.front();
+        candidates.pop();
+
+        // If it's a leaf, check for intersection with triangles inside
+        if (node->isLeaf)
+        {
+            for (const auto tri : node->triangles)
+            {
+                ++triTests;
+
+                dist = 0.f;
+                if (ray.Intersects(tri.v0, tri.v1, tri.v2, dist))
+                {
+                    if (dist >= minDist)
+                        continue;
+
+                    nearestHit = ray.position + (ray.direction * dist);
+                    minDist = dist;
+                }
+            }
+        }
+        // If it's an internal node, check for intersection with the child voxels
+        else
+        {
+            for (const auto& child : node->children)
+            {
+                if (!child)
+                    continue;
+
+                ++boxTests;
+                if (ray.Intersects(child->boundingBox, dist))
+                    candidates.push(child.get());
+            }
+        }
+    }
+
+    if (minDist < FLT_MAX)
+    {
+        hit = nearestHit;
+        return true;
+    }
+
+    hit = Vector3::Zero;
+    return false;
 }
 
 void Octree::Insert(Node& parentNode, const Triangle& newTri)
@@ -108,37 +176,38 @@ BoundingBox Octree::ComputeChildBounds(int childIdx, const BoundingBox& parentBo
 
 void Octree::Build(Node& node)
 {
-    if (node.isLeaf && !node.triangles.empty()) // can triangles even be empty as this point?
+    if (node.isLeaf && !node.triangles.empty()) // can triangles even be empty as this point? (not w/o DEPTH_MAX)
     {
         // Update the node's bounding box to encompass its contents
         auto it = node.triangles.begin();
 
         // Initialise node bounding box
-        node.boundingBox = ComputeTriangleBoundingBox(*it++);
+        node.boundingBox = ComputeTriangleBoundingBox(*it);
 
         // Expand node bounding box
+        ++it;
         for (it; it != node.triangles.end(); ++it)
             BoundingBox::CreateMerged(node.boundingBox, node.boundingBox, ComputeTriangleBoundingBox(*it));
     }
     else
     {
         // Update the node's bounding box to encompass its children
-        for (int i = 0; i < 8; ++i)
+        for (auto& child : node.children)
         {
-            if (!node.children[i])
+            if (!child)
                 continue;
 
             // WARNING: In my reference implementation, I can making another call to ComputeChildBounds here
 
-            Build(*node.children[i]);
+            Build(*child);
 
             // Merge this parent node's bounding box with that of its child
-            BoundingBox::CreateMerged(node.boundingBox, node.boundingBox, node.children[i]->boundingBox);
+            BoundingBox::CreateMerged(node.boundingBox, node.boundingBox, child->boundingBox);
         }
     }
 }
 
-DirectX::BoundingBox Octree::ComputeTriangleBoundingBox(const Triangle & triangle) const
+DirectX::BoundingBox Octree::ComputeTriangleBoundingBox(const Triangle& triangle) const
 {
     Vector3 min = Vector3::Min(triangle.v0, triangle.v1);
     min = Vector3::Min(min, triangle.v2);

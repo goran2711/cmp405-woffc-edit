@@ -87,7 +87,21 @@ void DisplayChunk::InitialiseBatch()
 		}
 	}
 
-    // initialise bounding boxes
+    // initialise bvh
+    index = (TERRAINRESOLUTION * (TERRAINRESOLUTION - 1)) + (TERRAINRESOLUTION - 1);
+    Vector3 max((TERRAINRESOLUTION - 1) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize),
+        m_terrainHeightScale,
+                (TERRAINRESOLUTION - 1) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize));
+
+    Vector3 min((0) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize),
+                0,
+                (0) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize));
+
+    BoundingBox rootBB;
+    BoundingBox::CreateFromPoints(rootBB, min, max);
+
+    m_bvh.Initialise(rootBB);
+
     for (size_t i = 0; i < TERRAINRESOLUTION - 1; i++)	//looping through QUADS.  so we subtrack one from the terrain array or it will try to draw a quad starting with the last vertex in each row. Which wont work
     {
         for (size_t j = 0; j < TERRAINRESOLUTION - 1; j++)//same as above
@@ -97,11 +111,12 @@ void DisplayChunk::InitialiseBatch()
             Vector3 topRight = m_terrainGeometry[i + 1][j + 1].position;
             Vector3 topLeft = m_terrainGeometry[i + 1][j].position;
 
-            BoundingBox::CreateFromPoints(m_boundingBoxes[i][j], bottomLeft, topRight);
+            m_bvh.Insert({ bottomLeft, bottomRight, topRight });
+            m_bvh.Insert({ bottomLeft, topRight, topLeft  });
         }
     }
 
-
+    m_bvh.Build();
 
 	CalculateTerrainNormals();
 	
@@ -208,10 +223,9 @@ void DisplayChunk::GenerateHeightmap()
 	//insert how YOU want to update the heigtmap here! :D
 }
 
-bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const SimpleMath::Viewport & viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord)
+bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const SimpleMath::Viewport & viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord) const
 {
-    static int n = 0;
-
+    // Create ray
     Vector3 nearPoint(mouseX, mouseY, 0.f);
     Vector3 farPoint(mouseX, mouseY, 1.f);
 
@@ -223,51 +237,11 @@ bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY,
 
     Ray ray(nearPointUnprojected, direction);
 
-    float minDist = std::numeric_limits<float>::max();
-    Vector3 nearestCoord;
-    for (size_t i = 0; i < TERRAINRESOLUTION - 1; i++)
+    // Query BVH
+    Vector3 hit;
+    if (m_bvh.Intersects(ray, hit))
     {
-        for (size_t j = 0; j < TERRAINRESOLUTION - 1; j++)
-        {
-            // Do a cheaper ray->box intersection first
-            // Helps with performance a little bit
-            float boxDist;
-            if (!ray.Intersects(m_boundingBoxes[i][j], boxDist))
-                continue;
-
-            Vector3 bottomLeft = m_terrainGeometry[i][j].position;
-            Vector3 bottomRight = m_terrainGeometry[i][j + 1].position;
-            Vector3 topRight = m_terrainGeometry[i + 1][j + 1].position;
-            Vector3 topLeft = m_terrainGeometry[i + 1][j].position;
-
-            // Tri1: v0 v1 v2
-            // Tri2: v0 v2 v3
-
-            float dist;
-            if (ray.Intersects(bottomLeft, bottomRight, topRight, dist))
-            {
-                if (dist < minDist)
-                {
-                    nearestCoord = ray.position + (ray.direction * dist);
-                    minDist = dist;
-                }
-            }
-
-            if (ray.Intersects(bottomLeft, topRight, topLeft, dist))
-            {
-                if (dist < minDist)
-                {
-                    nearestCoord = ray.position + (ray.direction * dist);
-                    minDist = dist;
-                }
-            }
-        }
-    }
-
-    if (minDist < std::numeric_limits<float>::max())
-    {
-        ++n;
-        wsCoord = nearestCoord;
+        wsCoord = hit;
         return true;
     }
 
