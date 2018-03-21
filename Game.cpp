@@ -393,63 +393,65 @@ void Game::Render()
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
     // Sampling depth shenanigans
-    if (m_showTerrainBrush)
-    {
-        // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
-        m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
+    m_displayChunk.CursorIntersectsTerrain(inputCommands.mouseX, inputCommands.mouseY, SimpleMath::Viewport(m_deviceResources->GetScreenViewport()), m_projection, m_view, m_world);
 
-        m_depthSampler->ReadDepthValue(context);
+    //if (m_showTerrainBrush)
+    //{
+    //    // wsCoord: ({wsCoord.m128_f32[0]}, {wsCoord.m128_f32[1]}, {wsCoord.m128_f32[2]})
+    //    m_depthSampler->Execute(context, (float) inputCommands.mouseX, (float) inputCommands.mouseY, m_deviceResources->GetDepthStencilShaderResourceView());
 
-        float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
-        XMVECTOR wsCoord = m_depthSampler->GetWorldSpaceCoordinate(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
+    //    m_depthSampler->ReadDepthValue(context);
 
-
-
-
+    //    float exponentialDepth = m_depthSampler->GetExponentialDepthValue();
+    //    XMVECTOR wsCoord = m_depthSampler->GetWorldSpaceCoordinate(m_deviceResources->GetScreenViewport(), m_world, m_view, m_projection);
 
 
 
-        /////////////////////// Render terrain again, but this time with projective texturing
-
-        // Projector position a little bit above the area the mouse is hovering over
-        XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f); // wsCoord + XMVectorSet(0.f, 1.f, 0.f, 0.f);
-
-        // Projector is focusing on a point below it (towards terrain)
-        XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
-        XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
-
-        // Use orthogoraphic projection
-        XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.01f, 100.f);
-
-        XMStoreFloat4x4(&m_projectorView, projectorView);
-        XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
 
 
-        // Render terrain to depth buffer from POV of projector
-        ID3D11RenderTargetView* nullRTV = nullptr;
-        context->OMSetRenderTargets(1, &nullRTV, m_projectorDSV.Get());
 
-        m_displayChunk.m_terrainEffect->SetView(projectorView);
-        m_displayChunk.m_terrainEffect->SetProjection(projectorProjection);
-        m_displayChunk.RenderBatch(m_deviceResources, true);
 
-        ID3D11RenderTargetView* defaultRTV = m_deviceResources->GetBackBufferRenderTargetView();
-        context->OMSetRenderTargets(1, &defaultRTV, m_deviceResources->GetDepthStencilView());
+    //    /////////////////////// Render terrain again, but this time with projective texturing
 
-        /// OLD Code using my hacky decal technique
-        //context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-        //context->OMSetDepthStencilState(m_dssEqTerrain.Get(), STENCIL_TERRAIN);
+    //    // Projector position a little bit above the area the mouse is hovering over
+    //    XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f); // wsCoord + XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
-        //context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
+    //    // Projector is focusing on a point below it (towards terrain)
+    //    XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
+    //    XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
 
-        //m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorTransform);
+    //    // Use orthogoraphic projection
+    //    XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.01f, 100.f);
 
-        //m_displayChunk.RenderBatch(m_deviceResources, true);
+    //    XMStoreFloat4x4(&m_projectorView, projectorView);
+    //    XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
 
-        //ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
-        //context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
-    }
+    //    // Render terrain to depth buffer from POV of projector
+    //    ID3D11RenderTargetView* nullRTV = nullptr;
+    //    context->OMSetRenderTargets(1, &nullRTV, m_projectorDSV.Get());
+
+    //    m_displayChunk.m_terrainEffect->SetView(projectorView);
+    //    m_displayChunk.m_terrainEffect->SetProjection(projectorProjection);
+    //    m_displayChunk.RenderBatch(m_deviceResources, true);
+
+    //    ID3D11RenderTargetView* defaultRTV = m_deviceResources->GetBackBufferRenderTargetView();
+    //    context->OMSetRenderTargets(1, &defaultRTV, m_deviceResources->GetDepthStencilView());
+
+    //    /// OLD Code using my hacky decal technique
+    //    //context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
+    //    //context->OMSetDepthStencilState(m_dssEqTerrain.Get(), STENCIL_TERRAIN);
+
+    //    //context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
+
+    //    //m_displayChunk.m_projectiveTexturingEffect->SetMatrices(XMMatrixIdentity(), m_view, m_projection, projectorTransform);
+
+    //    //m_displayChunk.RenderBatch(m_deviceResources, true);
+
+    //    //ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
+    //    //context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
+
+    //}
 
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 

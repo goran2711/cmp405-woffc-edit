@@ -25,11 +25,14 @@ public:
 	ID3D11ShaderResourceView *					m_texture_diffuse;				//diffuse texture
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>   m_terrainInputLayout;
 
+    bool XM_CALLCONV CursorIntersectsTerrain(long mouseX, long mouseY, const DirectX::SimpleMath::Viewport& viewport, DirectX::FXMMATRIX projection, DirectX::CXMMATRIX view, DirectX::CXMMATRIX world);
 
 private:
 	
 	DirectX::VertexPositionNormalTexture m_terrainGeometry[TERRAINRESOLUTION][TERRAINRESOLUTION];
 	BYTE m_heightMap[TERRAINRESOLUTION*TERRAINRESOLUTION];
+    DirectX::BoundingBox m_boundingBoxes[TERRAINRESOLUTION - 1][TERRAINRESOLUTION - 1];
+
 	void CalculateTerrainNormals();
 
 	float	m_terrainHeightScale;

@@ -23,7 +23,6 @@
 
 // TODO: Sampling the depth buffer should ignore objects
 //       - If possible, DepthSampler could output depth to one channel, and stencil value in another--then I could check stencil values on the CPU
-//       - Find some other way to make a compute shader respect the stencil buffer ...
 
 
 // A basic game implementation that creates a D3D11 device and
