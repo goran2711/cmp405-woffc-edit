@@ -395,12 +395,11 @@ void Game::Render()
     // Terrain brush decal
     if (m_showTerrainBrush)
     {
+        // Check if (and where) cursor intersects with terrain
         XMVECTOR wsCoord;
         if (m_displayChunk.CursorIntersectsTerrain(inputCommands.mouseX, inputCommands.mouseY, SimpleMath::Viewport(m_deviceResources->GetScreenViewport()), m_projection, m_view, m_world, wsCoord))
         {
-            /////////////////////// Render terrain again, but this time with projective texturing
-
-            // Projector position a little bit above the area the mouse is hovering over
+            // Projector position a little bit above the area the cursor is hovering over
             XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f);
 
             // Projector is focusing on a point below it (towards terrain)
@@ -426,7 +425,6 @@ void Game::Render()
         }
     }
 
-    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
     PostProcess(context);
 

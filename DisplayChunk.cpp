@@ -46,17 +46,13 @@ void DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResource
 {
 	auto context = DevResources->GetD3DDeviceContext();
 
+    m_terrainEffect->Apply(context);
+    context->IASetInputLayout(m_terrainInputLayout.Get());
+
+    // Unbind pixel shader when rendering purely to depth buffer
+    // (avoids annoying warnings)
     if (projectiveTexturing)
-    {
-        m_terrainEffect->Apply(context);
         context->PSSetShader(nullptr, nullptr, 0);
-        context->IASetInputLayout(m_terrainInputLayout.Get());
-    }
-    else
-    {
-        m_terrainEffect->Apply(context);
-        context->IASetInputLayout(m_terrainInputLayout.Get());
-    }
 
 	m_batch->Begin();
 	for (size_t i = 0; i < TERRAINRESOLUTION-1; i++)	//looping through QUADS.  so we subtrack one from the terrain array or it will try to draw a quad starting with the last vertex in each row. Which wont work
