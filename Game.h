@@ -32,6 +32,7 @@ class Game : public DX::IDeviceNotify
 {
     constexpr static uint32_t STENCIL_SELECTED_OBJECT   = (1 << 0);
     constexpr static uint32_t STENCIL_TERRAIN           = (1 << 1);
+    constexpr static uint32_t STENCIL_OBJECT            = (1 << 2);
 
     // Perhaps this should be variable (proportional to brush width, for instance)
     constexpr static float BRUSH_DECAL_DIMENSIONS       = 8.f;
@@ -115,12 +116,12 @@ private:
     
     bool m_showTerrainBrush = false;
 
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceState;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestState;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssWriteSelectedObject;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssNotEqSelectedObject;
 
-    // Special DSS for rendering the terrain, since I want what m_stencilReplaceState does PLUS I want depth testing on
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilReplaceStateTerrain;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_stencilTestStateTerrain;
+    // Special DSS for rendering the terrain, since I want what m_dssWriteSelectedObject does PLUS I want depth testing on
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssWriteTerrain;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssEqTerrain;
 
     Microsoft::WRL::ComPtr<ID3D11BlendState>                                m_terrainDecalBlendState;
 

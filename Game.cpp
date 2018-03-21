@@ -80,62 +80,55 @@ void Game::Initialize(HWND window, int width, int height)
 	m_effect2->Play();
 	#endif
 
-    CD3D11_DEPTH_STENCIL_DESC dsDesc(CD3D11_DEFAULT{});
+    CD3D11_DEPTH_STENCIL_DESC dsDesc(
+        FALSE,
+        D3D11_DEPTH_WRITE_MASK_ALL,
+        D3D11_COMPARISON_LESS,
+        TRUE,
+        STENCIL_SELECTED_OBJECT,
+        STENCIL_SELECTED_OBJECT,
+        D3D11_STENCIL_OP_KEEP,
+        D3D11_STENCIL_OP_KEEP,
+        D3D11_STENCIL_OP_REPLACE,
+        D3D11_COMPARISON_ALWAYS,
+        
+        D3D11_STENCIL_OP_KEEP,
+        D3D11_STENCIL_OP_KEEP,
+        D3D11_STENCIL_OP_REPLACE,
+        D3D11_COMPARISON_ALWAYS
+    );
 
-	// Depth test parameters
-	dsDesc.DepthEnable = false; // Disable depth test when writing to the stencil buffer (outline will always show, regardless of occlusion)
+    // DSS for writing selected object to stencil buffer
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssWriteSelectedObject.ReleaseAndGetAddressOf());
 
-	// Stencil test parameters
-	dsDesc.StencilEnable = true;
-	dsDesc.StencilReadMask = STENCIL_SELECTED_OBJECT;
-    dsDesc.StencilWriteMask = STENCIL_SELECTED_OBJECT;
-
-	// Stencil operations if pixel is front-facing
-	dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
-	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Stencil operations if pixel is back-facing
-	dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
-	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-	// Create depth stencil state
-    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilReplaceState.ReleaseAndGetAddressOf());
-
-    // THEORY: Enabling depth test for this DSS means that the move hover will not "pass through" objects (to the terrain underneath/behind)
-    dsDesc.DepthEnable = true;
-    dsDesc.StencilReadMask = STENCIL_TERRAIN;
-    dsDesc.StencilWriteMask = STENCIL_TERRAIN;
-
-    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilReplaceStateTerrain.ReleaseAndGetAddressOf());
-
-    dsDesc.DepthEnable = false;
+    // DSS for reading selected object from stencil buffer (pass if read value != STENCIL_SELECTED_OBJECT--makes stencil act as cutout)
     dsDesc.StencilReadMask = STENCIL_SELECTED_OBJECT;
     dsDesc.StencilWriteMask = STENCIL_SELECTED_OBJECT;
-
-	// Stencil operations if pixel is front-facing
 	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_NOT_EQUAL;
-
-	// Stencil operations if pixel is back-facing
 	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_NOT_EQUAL;
 
-	// Create depth stencil state
-    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilTestState.ReleaseAndGetAddressOf());
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssNotEqSelectedObject.ReleaseAndGetAddressOf());
 
+    // DSS for writing terrain to stencil buffer
+    dsDesc.DepthEnable = TRUE;
     dsDesc.StencilReadMask = STENCIL_TERRAIN;
     dsDesc.StencilWriteMask = STENCIL_TERRAIN;
+    dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+    dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+    dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+    dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssWriteTerrain.ReleaseAndGetAddressOf());
+
+    // DSS for reading terrain from stencil buffer (pass if read value == STENCIL_TERRAIN--makes decal only appear on terrain)
+    dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
     dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+    dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
     dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
-	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_stencilTestStateTerrain.ReleaseAndGetAddressOf());
-
-    // TODO: Create blend state for blending the projective texturing RT with the BB
+	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssEqTerrain.ReleaseAndGetAddressOf());
 }
 
 void Game::SetGridState(bool state)
@@ -262,7 +255,7 @@ void XM_CALLCONV Game::RenderSelectedObject(ID3D11DeviceContext* context, const 
             part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[mesh->name][j++].Get(), [&]
             {
                 // Custom DSS so the mesh will be rendered to the stencil buffer also
-                context->OMSetDepthStencilState(m_stencilReplaceState.Get(), STENCIL_SELECTED_OBJECT);
+                context->OMSetDepthStencilState(m_dssWriteSelectedObject.Get(), STENCIL_SELECTED_OBJECT);
             });
         }
     }
@@ -280,24 +273,27 @@ void Game::PostProcess(ID3D11DeviceContext* context)
     // Projected texture / decal
     if (m_showTerrainBrush)
     {
-        //ID3D11RenderTargetView* defaultRTV = m_deviceResources->GetBackBufferRenderTargetView();
-        //context->OMSetRenderTargets(1, &defaultRTV, nullptr);
-
+        // Copy depth/stencil buffer because we want to sample it in the pixel shader, but we also want to
+        // adhere to the stencil buffer (same resource cannot be bound to input and output simultaneously)
         context->CopyResource(m_depthStencilTexCopy.Get(), m_deviceResources->GetDepthStencilTexture());
 
         m_decalMatrices.invViewProjection = XMMatrixInverse(nullptr, m_view * m_projection);
         m_decalMatrices.worldToProjectorClip = XMLoadFloat4x4(&m_projectorView) * XMLoadFloat4x4(&m_projectorProjection);
+        m_decalMatrixBuffer.SetData(context, m_decalMatrices);
 
-        // FIX: If I can get this draw call to only affect pixels with STENCIL_TERRAIN in the stencil buffer, the decal will ONLY be applied to terrain
+        // Project decal onto terrain
         m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
         {
-            // TODO: Set const buffers
-            m_decalMatrixBuffer.SetData(context, m_decalMatrices);
+            // Custom state
+            context->OMSetDepthStencilState(m_dssEqTerrain.Get(), STENCIL_TERRAIN);
 
+            // Const buffers
             context->PSSetConstantBuffers(0, 1, m_decalMatrixBuffer.GetAddressOfBuffer());
 
+            // Override shader
             context->PSSetShader(m_decalPixelShader.Get(), nullptr, 0);
 
+            // Textures
             // NOTE: register(t0) is set to m_projectorSRV.Get() by SpriteBatch
             ID3D11ShaderResourceView* textures[] = { m_depthStencilSRVCopy.Get(), m_brushMarkerDecalSRV.Get() };
             context->PSSetShaderResources(1, 2, textures);
@@ -305,10 +301,11 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_sprites->Draw(m_projectorSRV.Get(), fullscreenRect);
         m_sprites->End();
 
+        // Cleanup shader resources (not strictly necessary)
         ID3D11ShaderResourceView* nullSRVs[] = { nullptr, nullptr, nullptr };
         context->PSSetShaderResources(0, 3, nullSRVs);
 
-        //context->OMSetRenderTargets(1, &defaultRTV, m_deviceResources->GetDepthStencilView());
+        context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
     }
 
     // Selection highlighting
@@ -345,7 +342,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
         {
             // Do not blend the blurred texture with the areas occupied by a selected object
-            context->OMSetDepthStencilState(m_stencilTestState.Get(), STENCIL_SELECTED_OBJECT);
+            context->OMSetDepthStencilState(m_dssNotEqSelectedObject.Get(), STENCIL_SELECTED_OBJECT);
         });
         m_sprites->Draw(m_rt2SRV.Get(), fullscreenRect);
         m_sprites->End();
@@ -383,7 +380,7 @@ void Game::Render()
     //RENDER TERRAIN
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     // Imprint the terrain onto the stencil buffer
-    context->OMSetDepthStencilState(m_stencilReplaceStateTerrain.Get(), STENCIL_TERRAIN);
+    context->OMSetDepthStencilState(m_dssWriteTerrain.Get(), STENCIL_TERRAIN);
     context->RSSetState(m_states->CullNone());
 
     ID3D11SamplerState* samplers[] = { m_states->AnisotropicWrap() };
@@ -441,7 +438,7 @@ void Game::Render()
 
         /// OLD Code using my hacky decal technique
         //context->OMSetRenderTargets(1, m_rt3RTV.GetAddressOf(), m_deviceResources->GetDepthStencilView());
-        //context->OMSetDepthStencilState(m_stencilTestStateTerrain.Get(), STENCIL_TERRAIN);
+        //context->OMSetDepthStencilState(m_dssEqTerrain.Get(), STENCIL_TERRAIN);
 
         //context->PSSetSamplers(0, 1, m_linearBorderSS.GetAddressOf());
 
