@@ -409,7 +409,7 @@ void Game::Render()
             /////////////////////// Render terrain again, but this time with projective texturing
 
             // Projector position a little bit above the area the mouse is hovering over
-            XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f); // wsCoord + XMVectorSet(0.f, 1.f, 0.f, 0.f);
+            XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f);
 
             // Projector is focusing on a point below it (towards terrain)
             XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
@@ -645,7 +645,7 @@ bool XM_CALLCONV Game::CreateScreenSpaceBoundingBox(const DirectX::BoundingBox &
 			++corner;
 	}
 
-	// There are not enough corners(vertices) left to create a bounding box...
+	// There are not enough corners(triangles) left to create a bounding box...
 	if (corners.size() < 2)
 		return false;
 

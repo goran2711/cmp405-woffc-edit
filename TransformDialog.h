@@ -18,7 +18,7 @@ public:
 
     explicit TransformDialog(CWnd* parent = nullptr);
 
-    // Dialog Data
+    // Dialog Triangle
 #ifdef AFX_DESIGN_TIME
     enum { IDD = IDD_DIALOG_TRANSFORM };
 #endif

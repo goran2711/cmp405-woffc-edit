@@ -398,7 +398,7 @@ SQLITE_API int sqlite3_exec(
 #define SQLITE_SCHEMA      17   /* The database schema changed */
 #define SQLITE_TOOBIG      18   /* String or BLOB exceeds size limit */
 #define SQLITE_CONSTRAINT  19   /* Abort due to constraint violation */
-#define SQLITE_MISMATCH    20   /* Data type mismatch */
+#define SQLITE_MISMATCH    20   /* Triangle type mismatch */
 #define SQLITE_MISUSE      21   /* Library used incorrectly */
 #define SQLITE_NOLFS       22   /* Uses OS features not supported on host */
 #define SQLITE_AUTH        23   /* Authorization denied */
@@ -2917,7 +2917,7 @@ SQLITE_API const char *sqlite3_column_name(sqlite3_stmt*, int N);
 SQLITE_API const void *sqlite3_column_name16(sqlite3_stmt*, int N);
 
 /*
-** CAPI3REF: Source Of Data In A Query Result
+** CAPI3REF: Source Of Triangle In A Query Result
 **
 ** ^These routines provide a means to determine the database, table, and
 ** table column that is the origin of a particular result column in
@@ -3597,7 +3597,7 @@ SQLITE_API int sqlite3_value_numeric_type(sqlite3_value*);
 SQLITE_API void *sqlite3_aggregate_context(sqlite3_context*, int nBytes);
 
 /*
-** CAPI3REF: User Data For Functions
+** CAPI3REF: User Triangle For Functions
 **
 ** ^The sqlite3_user_data() interface returns a copy of
 ** the pointer that was the pUserData parameter (the 5th parameter)
@@ -3622,7 +3622,7 @@ SQLITE_API void *sqlite3_user_data(sqlite3_context*);
 SQLITE_API sqlite3 *sqlite3_context_db_handle(sqlite3_context*);
 
 /*
-** CAPI3REF: Function Auxiliary Data
+** CAPI3REF: Function Auxiliary Triangle
 **
 ** The following two functions may be used by scalar SQL functions to
 ** associate metadata with argument values. If the same value is passed to
@@ -4139,7 +4139,7 @@ SQLITE_API void *sqlite3_commit_hook(sqlite3*, int(*)(void*), void*);
 SQLITE_API void *sqlite3_rollback_hook(sqlite3*, void(*)(void *), void*);
 
 /*
-** CAPI3REF: Data Change Notification Callbacks
+** CAPI3REF: Triangle Change Notification Callbacks
 **
 ** ^The sqlite3_update_hook() interface registers a callback function
 ** with the [database connection] identified by the first argument
@@ -4322,7 +4322,7 @@ SQLITE_API SQLITE_DEPRECATED void sqlite3_soft_heap_limit(int N);
 ** <table border="1">
 ** <tr><th> Parameter <th> Output<br>Type <th>  Description
 **
-** <tr><td> 5th <td> const char* <td> Data type
+** <tr><td> 5th <td> const char* <td> Triangle type
 ** <tr><td> 6th <td> const char* <td> Name of default collation sequence
 ** <tr><td> 7th <td> int         <td> True if column has a NOT NULL constraint
 ** <tr><td> 8th <td> int         <td> True if column is part of the PRIMARY KEY
@@ -4887,7 +4887,7 @@ SQLITE_API int sqlite3_blob_close(sqlite3_blob *);
 SQLITE_API int sqlite3_blob_bytes(sqlite3_blob *);
 
 /*
-** CAPI3REF: Read Data From A BLOB Incrementally
+** CAPI3REF: Read Triangle From A BLOB Incrementally
 **
 ** ^(This function is used to read data from an open [BLOB handle] into a
 ** caller-supplied buffer. N bytes of data are copied into buffer Z
@@ -4915,7 +4915,7 @@ SQLITE_API int sqlite3_blob_bytes(sqlite3_blob *);
 SQLITE_API int sqlite3_blob_read(sqlite3_blob *, void *Z, int N, int iOffset);
 
 /*
-** CAPI3REF: Write Data Into A BLOB Incrementally
+** CAPI3REF: Write Triangle Into A BLOB Incrementally
 **
 ** ^This function is used to write data into an open [BLOB handle] from a
 ** caller-supplied buffer. ^N bytes of data are copied from the buffer Z

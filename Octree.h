@@ -6,19 +6,24 @@
 
 // WARNING: I may need to add MAX_DEPTH to the tree (however, a Node can only contain one quad atm)
 
+namespace DirectX
+{
+    class VertexPositionNormalTexture;
+}
+
 class Octree
 {
-    struct Data;
+    struct Triangle;
 
     struct Node
     {
         std::unique_ptr<Node> children[8];
 
         // Bounding box that encompasses all this node's children
-        std::shared_ptr<DirectX::BoundingBox> boundingBox;
+        DirectX::BoundingBox boundingBox;
 
         bool isLeaf = true;
-        std::vector<Data> vertices;
+        std::vector<Triangle> triangles;
     };
 
     constexpr static uint8_t RIGHT_HALF = (1 << 2);
@@ -26,30 +31,33 @@ class Octree
     constexpr static uint8_t FAR_HALF   = (1 << 0);
 
 public:
-    struct Data
+    struct Triangle
     {
-        DirectX::SimpleMath::Vector3 bottomLeft;
-        DirectX::SimpleMath::Vector3 bottomRight;
-        DirectX::SimpleMath::Vector3 topLeft;
-        DirectX::SimpleMath::Vector3 topRight;
-
-        std::shared_ptr<DirectX::BoundingBox> boundingBox;
+        DirectX::SimpleMath::Vector3 v0, v1, v2;
     };
 
     // Octree will merge these bounding boxes to create the root node
     // It will then insert all of these boxes into the quadtree
-    explicit Octree(const std::vector<DirectX::BoundingBox>& boundingBoxes);
+    Octree(const DirectX::BoundingBox& rootBoundingBox, DirectX::VertexPositionNormalTexture* vertices, size_t numVertices);
 
-    // Insert new quad into the quad tree
-    void Insert(const Data& newQuad);
+    // Insert new triangle into the octree
+    void Insert(const Triangle& newTri);
+
+    // Build the BVH (tighten the bounding volumes)
+    void Build();
 
 private:
-    void Insert(Node& parentNode, const Data& newQuad);
+    void Insert(Node& parentNode, const Triangle& newTri);
 
     // Computes the bounds of a NODE (not its contents)--imagine the root node as a massive square--
     // this is the function that computes the four sub-squares as the bounds of its four children
     //  This step is necessary for determining which side(child) of the tree(node) a newly inserted quad should go to
     DirectX::BoundingBox ComputeChildBounds(int childIdx, const DirectX::BoundingBox& parentBoundingBox) const;
+
+    void Build(Node& node);
+
+    DirectX::BoundingBox ComputeTriangleBoundingBox(const Triangle& triangle) const;
+
 
     Node m_root;
 };

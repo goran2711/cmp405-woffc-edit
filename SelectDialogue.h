@@ -17,7 +17,7 @@ public:
 	virtual ~SelectDialogue();
 	void SetObjectData(std::vector<SceneObject>* SceneGraph, std::vector<int>* selections);	//passing in pointers to the data the class will operate on.
 	
-// Dialog Data
+// Dialog Triangle
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_DIALOG1 };
 #endif

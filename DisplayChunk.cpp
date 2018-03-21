@@ -11,7 +11,7 @@ DisplayChunk::DisplayChunk()
 	//terrain size in meters. note that this is hard coded here, we COULD get it from the terrain chunk along with the other info from the tool if we want to be more flexible.
 	m_terrainSize = 512;
 	m_terrainHeightScale = 0.25;  //convert our 0-256 terrain to 64
-	m_textureCoordStep = 1.0 / (TERRAINRESOLUTION-1);	//-1 becuase its split into chunks. not vertices.  we want tthe last one in each row to have tex coord 1
+	m_textureCoordStep = 1.0 / (TERRAINRESOLUTION-1);	//-1 becuase its split into chunks. not triangles.  we want tthe last one in each row to have tex coord 1
 	m_terrainPositionScalingFactor = m_terrainSize / (TERRAINRESOLUTION-1);
 }
 
@@ -72,7 +72,7 @@ void DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResource
 void DisplayChunk::InitialiseBatch()
 {
 	//build geometry for our terrain array
-	//iterate through all the vertices of our required resolution terrain.
+	//iterate through all the triangles of our required resolution terrain.
 	int index = 0;
 
 	for (size_t i = 0; i < TERRAINRESOLUTION; i++)
@@ -126,7 +126,7 @@ void DisplayChunk::LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResour
 		return;
 	}
 
-	// Here We Load The .RAW File Into Our pHeightMap Data Array
+	// Here We Load The .RAW File Into Our pHeightMap Triangle Array
 	// We Are Only Reading In '1', And The Size Is (Width * Height)
 	fread(m_heightMap, 1, TERRAINRESOLUTION*TERRAINRESOLUTION, pFile);
 
@@ -210,6 +210,8 @@ void DisplayChunk::GenerateHeightmap()
 
 bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const SimpleMath::Viewport & viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord)
 {
+    static int n = 0;
+
     Vector3 nearPoint(mouseX, mouseY, 0.f);
     Vector3 farPoint(mouseX, mouseY, 1.f);
 
@@ -221,6 +223,8 @@ bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY,
 
     Ray ray(nearPointUnprojected, direction);
 
+    float minDist = std::numeric_limits<float>::max();
+    Vector3 nearestCoord;
     for (size_t i = 0; i < TERRAINRESOLUTION - 1; i++)
     {
         for (size_t j = 0; j < TERRAINRESOLUTION - 1; j++)
@@ -242,16 +246,29 @@ bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY,
             float dist;
             if (ray.Intersects(bottomLeft, bottomRight, topRight, dist))
             {
-                wsCoord = nearPointUnprojected + (direction * dist);
-                return true; 
-            }
-            else if (ray.Intersects(bottomLeft, topRight, topLeft, dist))
-            {
-                wsCoord = nearPointUnprojected + (direction * dist);
-                return true;
+                if (dist < minDist)
+                {
+                    nearestCoord = ray.position + (ray.direction * dist);
+                    minDist = dist;
+                }
             }
 
+            if (ray.Intersects(bottomLeft, topRight, topLeft, dist))
+            {
+                if (dist < minDist)
+                {
+                    nearestCoord = ray.position + (ray.direction * dist);
+                    minDist = dist;
+                }
+            }
         }
+    }
+
+    if (minDist < std::numeric_limits<float>::max())
+    {
+        ++n;
+        wsCoord = nearestCoord;
+        return true;
     }
 
     wsCoord = XMVectorZero();
