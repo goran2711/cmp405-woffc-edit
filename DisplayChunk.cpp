@@ -4,7 +4,7 @@
 
 
 using namespace DirectX;
-using namespace DirectX::SimpleMath;
+using namespace SimpleMath;
 
 DisplayChunk::DisplayChunk()
 {
@@ -208,7 +208,7 @@ void DisplayChunk::GenerateHeightmap()
 	//insert how YOU want to update the heigtmap here! :D
 }
 
-bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const DirectX::SimpleMath::Viewport & viewport, DirectX::FXMMATRIX projection, DirectX::CXMMATRIX view, DirectX::CXMMATRIX world)
+bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const SimpleMath::Viewport & viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord)
 {
     Vector3 nearPoint(mouseX, mouseY, 0.f);
     Vector3 farPoint(mouseX, mouseY, 1.f);
@@ -242,27 +242,26 @@ bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY,
             float dist;
             if (ray.Intersects(bottomLeft, bottomRight, topRight, dist))
             {
-                Vector3 intersectionPoint = nearPointUnprojected + (direction * dist);
+                wsCoord = nearPointUnprojected + (direction * dist);
                 return true; 
             }
             else if (ray.Intersects(bottomLeft, topRight, topLeft, dist))
             {
-                Vector3 intersectionPoint = nearPointUnprojected + (direction * dist);
+                wsCoord = nearPointUnprojected + (direction * dist);
                 return true;
             }
 
         }
     }
 
+    wsCoord = XMVectorZero();
     return false;
 }
 
 void DisplayChunk::CalculateTerrainNormals()
 {
 	int index1, index2, index3, index4;
-	DirectX::SimpleMath::Vector3 upDownVector, leftRightVector, normalVector;
-
-
+	Vector3 upDownVector, leftRightVector, normalVector;
 
 	for (int i = 0; i<(TERRAINRESOLUTION - 1); i++)
 	{
