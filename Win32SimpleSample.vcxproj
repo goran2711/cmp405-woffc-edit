@@ -183,6 +183,7 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="MFCMain.cpp" />
     <ClCompile Include="DecalEffect.cpp" />
+    <ClCompile Include="Octree.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="SelectDialogue.cpp" />
     <ClCompile Include="sqlite3.c" />
@@ -206,6 +207,7 @@
     <ClInclude Include="MFCRenderFrame.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="DecalEffect.h" />
+    <ClInclude Include="Octree.h" />
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SceneObject.h" />
