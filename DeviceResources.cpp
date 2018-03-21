@@ -353,25 +353,27 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
             D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE
             );
 
-        ComPtr<ID3D11Texture2D> depthStencil;
         DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(
             &depthStencilDesc,
             nullptr,
-            depthStencil.GetAddressOf()
+            m_d3dDepthStencilTexture.ReleaseAndGetAddressOf()
             ));
 
         CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D, DXGI_FORMAT_D24_UNORM_S8_UINT);
         DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(
-            depthStencil.Get(),
+            m_d3dDepthStencilTexture.Get(),
             &depthStencilViewDesc,
             m_d3dDepthStencilView.ReleaseAndGetAddressOf()
             ));
 
         CD3D11_SHADER_RESOURCE_VIEW_DESC depthStencilSRVDesc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
-        DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(depthStencil.Get(),
+        DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(m_d3dDepthStencilTexture.Get(),
                                                                 &depthStencilSRVDesc,
                                                                 m_d3dDepthStencilShaderResourceView.ReleaseAndGetAddressOf()
         ));
+
+        dsTexDesc = depthStencilDesc;
+        srvDesc = depthStencilSRVDesc;
     }
     
     // Set the 3D rendering viewport to target the entire window.

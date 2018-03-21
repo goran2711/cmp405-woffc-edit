@@ -94,6 +94,7 @@ private:
 	void Update(DX::StepTimer const& timer);
 
     void XM_CALLCONV RenderSceneGraph(ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection);
+    void XM_CALLCONV RenderSelectedObject(ID3D11DeviceContext* context, const DirectX::Model& model, FXMMATRIX local, CXMMATRIX view, CXMMATRIX projection);
     void PostProcess(ID3D11DeviceContext* context);
 
 	void CreateDeviceDependentResources();
@@ -132,6 +133,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_brushMarkerDecalSRV;
     Microsoft::WRL::ComPtr<ID3D11SamplerState>                              m_linearBorderSS;
 
+    Microsoft::WRL::ComPtr<ID3D11Texture2D>                                 m_depthStencilTexCopy;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_depthStencilSRVCopy;
 
     Microsoft::WRL::ComPtr<ID3D11PixelShader>                               m_decalPixelShader;
 
