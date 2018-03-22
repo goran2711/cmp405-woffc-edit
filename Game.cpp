@@ -407,14 +407,19 @@ void Game::Render()
             }
 
             // Projector position a little bit above the area the cursor is hovering over
-            XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f);
+            // NOTE: One thing to be weary of here is that the projector's near plane could potentially clip the terrain
+            //        when doing terrain manipulation, since (currently) the BVH is not being regenerated as the geometry
+            //        is displaced.
+            static const float PROJECTOR_FAR = 256.f;
+            static const float PROJECTOR_OFFSET = PROJECTOR_FAR - 1.f;
+            XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, PROJECTOR_OFFSET, 0.f, 0.f);
 
             // Projector is focusing on a point below it (towards terrain)
             XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
             XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
 
             // Use orthogoraphic projection
-            XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.01f, 100.f);
+            XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.01f, PROJECTOR_FAR);
 
             XMStoreFloat4x4(&m_projectorView, projectorView);
             XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
