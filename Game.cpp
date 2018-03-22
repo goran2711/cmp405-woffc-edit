@@ -399,6 +399,13 @@ void Game::Render()
         XMVECTOR wsCoord;
         if (m_displayChunk.CursorIntersectsTerrain(inputCommands.mouseX, inputCommands.mouseY, SimpleMath::Viewport(m_deviceResources->GetScreenViewport()), m_projection, m_view, m_world, wsCoord))
         {
+            // If the player is trying to manipulate the terrain at this location
+            // FIX: Absolutely not the right place to do this, but just for fun
+            if (inputCommands.leftMouseDown)
+            {
+                m_displayChunk.ManipulateTerrain(wsCoord);
+            }
+
             // Projector position a little bit above the area the cursor is hovering over
             XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, 20.f, 0.f, 0.f);
 

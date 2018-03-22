@@ -344,6 +344,7 @@ void ToolMain::Tick(MSG *msg)
 
     // "Reset" input commands
     m_toolInputCommands.mouseDX = m_toolInputCommands.mouseDY = 0;
+    m_toolInputCommands.leftMouseDown = false;
 }
 
 SceneObject * ToolMain::GetObjectFromID(int id)
@@ -366,6 +367,9 @@ void ToolMain::UpdateDisplayObject(SceneObject * sceneObject)
 void ToolMain::ToggleBrush()
 {
     m_brushActive = !m_brushActive;
+
+    // Clear selections as well
+    m_selectedObjects.clear();
 
     m_d3dRenderer.SetBrushActive(m_brushActive);
 }
@@ -391,11 +395,15 @@ bool ToolMain::UpdateInput(MSG * msg)
             break;
 
         case WM_MOUSEMOVE:
+        {
             m_cursorPos.x = GET_X_LPARAM(msg->lParam);
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
 
+            m_toolInputCommands.leftMouseDown = (msg->wParam & MK_LBUTTON);
+
             // if the left mouse button is down (dragging) and the mouse is free
-            if ((msg->wParam & MK_LBUTTON) != 0 && !m_cursorCaptured)
+            bool cursorNotCapturedAndBrushNotActive = (!m_cursorCaptured && !m_brushActive);
+            if ((msg->wParam & MK_LBUTTON) != 0 && cursorNotCapturedAndBrushNotActive)
             {
                 // Add a threshold for registering drag
                 float distX = m_cursorPos.x - m_beginDragPos.x;
@@ -431,7 +439,7 @@ bool ToolMain::UpdateInput(MSG * msg)
             // NOTE: Might need to make it so that this is run whenever L_BUTTON is not down
             else
                 m_dragging = false;
-
+        }
             break;
 
         case WM_LBUTTONUP:
@@ -469,7 +477,7 @@ bool ToolMain::UpdateInput(MSG * msg)
                 ClipCursor(nullptr);
             }
             // Do picking if this is a normal click
-            else
+            else if (!m_brushActive)
             {
                 // Get the ID of the object the user is clicking on (if any)
                 int id = -1;
