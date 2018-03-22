@@ -34,7 +34,7 @@ class Game : public DX::IDeviceNotify
     constexpr static uint32_t STENCIL_OBJECT            = (1 << 2);
 
     // Perhaps this should be variable (proportional to brush width, for instance)
-    constexpr static float BRUSH_DECAL_DIMENSIONS       = 8.f;
+    constexpr static float BRUSH_DECAL_DIMENSIONS       = 17.f;
 
 public:
 	enum PickingMode

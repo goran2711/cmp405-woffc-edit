@@ -219,19 +219,34 @@ void DisplayChunk::GenerateHeightmap()
     //insert how YOU want to update the heigtmap here! :D
 }
 
-void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR pos)
+void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR pos, int brushSize, bool elevate)
 {
     // TODO: Some check to ensure it is within bounds
-
     int x = (pos.m128_f32[0] + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
     int z = (pos.m128_f32[2] + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
 
-    m_terrainGeometry[z][x].position.y = 50.f;
+    const int brushSizeH = (brushSize / 2) / m_terrainPositionScalingFactor;
 
-    //float tu = x * m_textureCoordStep;
-    //float tv = z * m_textureCoordStep;
+    int minX = std::max(0, x - brushSizeH - 1);
+    int minZ = std::max(0, z - brushSizeH - 1);
 
+    int maxX = std::min(TERRAINRESOLUTION - 1, x + brushSizeH + 2);
+    int maxZ = std::min(TERRAINRESOLUTION - 1, z + brushSizeH + 2);
 
+    for (int i = minZ; i < maxZ; ++i)
+    {
+        for (int j = minX; j < maxX; ++j)
+        {
+            float vertexHeight = m_terrainGeometry[i][j].position.y;
+
+            if (elevate)
+                m_terrainGeometry[i][j].position.y = std::min(vertexHeight + 1.f, 255.f * m_terrainHeightScale);
+            else
+                m_terrainGeometry[i][j].position.y = std::max(vertexHeight - 1.f, 0.f);
+        }
+    }
+
+    CalculateTerrainNormals();
 }
 
 bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const SimpleMath::Viewport & viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord) const

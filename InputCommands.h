@@ -16,6 +16,7 @@ struct InputCommands
     long mouseY;
 
     bool leftMouseDown;
+    bool rightMouseDown;
 
 	struct
 	{

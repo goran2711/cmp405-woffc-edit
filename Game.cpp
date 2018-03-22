@@ -401,9 +401,9 @@ void Game::Render()
         {
             // If the player is trying to manipulate the terrain at this location
             // FIX: Absolutely not the right place to do this, but just for fun
-            if (inputCommands.leftMouseDown)
+            if (inputCommands.leftMouseDown || inputCommands.rightMouseDown)
             {
-                m_displayChunk.ManipulateTerrain(wsCoord);
+                m_displayChunk.ManipulateTerrain(wsCoord, BRUSH_DECAL_DIMENSIONS, inputCommands.leftMouseDown);
             }
 
             // Projector position a little bit above the area the cursor is hovering over

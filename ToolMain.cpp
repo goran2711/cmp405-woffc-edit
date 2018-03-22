@@ -344,7 +344,6 @@ void ToolMain::Tick(MSG *msg)
 
     // "Reset" input commands
     m_toolInputCommands.mouseDX = m_toolInputCommands.mouseDY = 0;
-    m_toolInputCommands.leftMouseDown = false;
 }
 
 SceneObject * ToolMain::GetObjectFromID(int id)
@@ -391,6 +390,8 @@ bool ToolMain::UpdateInput(MSG * msg)
             m_cursorPos.x = GET_X_LPARAM(msg->lParam);
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
 
+            m_toolInputCommands.leftMouseDown = true;
+
             m_beginDragPos = m_currentDragPos = { m_cursorPos.x, m_cursorPos.y };
             break;
 
@@ -400,6 +401,7 @@ bool ToolMain::UpdateInput(MSG * msg)
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
 
             m_toolInputCommands.leftMouseDown = (msg->wParam & MK_LBUTTON);
+            m_toolInputCommands.rightMouseDown = (msg->wParam & MK_RBUTTON);
 
             // if the left mouse button is down (dragging) and the mouse is free
             bool cursorNotCapturedAndBrushNotActive = (!m_cursorCaptured && !m_brushActive);
@@ -444,6 +446,8 @@ bool ToolMain::UpdateInput(MSG * msg)
 
         case WM_LBUTTONUP:
         {
+            m_toolInputCommands.leftMouseDown = false;
+
             // Do box selection if the user has performed a drag action
             if (m_dragging)
             {
@@ -518,9 +522,17 @@ bool ToolMain::UpdateInput(MSG * msg)
         }
         break;
         case WM_RBUTTONDOWN:
-        case WM_RBUTTONUP:
+            m_toolInputCommands.rightMouseDown = true;
+
             // Capture/release the cursor when right mouse button is clicked/released
-            if (!m_cursorControlsCamera)
+            if ((!m_cursorControlsCamera && !m_brushActive))
+                m_captureCursorThisFrame = true;
+            break;
+        case WM_RBUTTONUP:
+            m_toolInputCommands.rightMouseDown = false;
+
+            // Capture/release the cursor when right mouse button is clicked/released
+            if ((!m_cursorControlsCamera && !m_brushActive))
                 m_captureCursorThisFrame = true;
             break;
     }

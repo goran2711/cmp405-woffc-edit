@@ -21,7 +21,7 @@ public:
 	void UpdateTerrain();			//updates the geometry based on the heigtmap
 	void GenerateHeightmap();		//creates or alters the heightmap
 
-    void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR pos);
+    void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR pos, int brushSize, bool elevate);
 
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionNormalTexture>>  m_batch;
 	std::unique_ptr<DirectX::BasicEffect>       m_terrainEffect;
