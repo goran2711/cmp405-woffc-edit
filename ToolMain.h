@@ -11,6 +11,8 @@
 // FIX: WM_SIZE message doesn't seem to work anymore!
 //      - Works on my fork though
 
+// TODO: Make the scroll wheel change the size of the brush while terrain manipulation tool is active
+
 class ToolMain
 {
 	// Distance (square) before a drag action is interpreted
