@@ -176,11 +176,6 @@ void DisplayChunk::LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResour
 
 void DisplayChunk::SaveHeightMap()
 {
-    /*	for (size_t i = 0; i < TERRAINRESOLUTION*TERRAINRESOLUTION; i++)
-        {
-            m_heightMap[i] = 0;
-        }*/
-
     FILE *pFile = NULL;
 
     // Open The File In Read / Binary Mode.
@@ -193,7 +188,7 @@ void DisplayChunk::SaveHeightMap()
         return;
     }
 
-    fwrite(m_heightMap, 1, TERRAINRESOLUTION*TERRAINRESOLUTION, pFile);
+    fwrite(m_heightMap, sizeof(BYTE), TERRAINRESOLUTION*TERRAINRESOLUTION, pFile);
     fclose(pFile);
 
 }
@@ -219,30 +214,50 @@ void DisplayChunk::GenerateHeightmap()
     //insert how YOU want to update the heigtmap here! :D
 }
 
-void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR pos, int brushSize, bool elevate)
+void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSize, bool elevate)
 {
-    // TODO: Some check to ensure it is within bounds
-    int x = (pos.m128_f32[0] + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
-    int z = (pos.m128_f32[2] + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
+    // TODO: Some check to ensure it is within bounds (well.. cursor-terrain test will never be true outside the terrain, sooo...)
+
+    // Controls the speed at which vertices are displaced
+    static const float MAGNITUDE = 1.f;
+    
+    // Transform to grid coordinates
+    int x = (XMVectorGetX(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
+    int z = (XMVectorGetZ(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
 
     const int brushSizeH = (brushSize / 2) / m_terrainPositionScalingFactor;
 
+
+    // FIX: Not sure why I have to add these -1 and +2 offsets here to get a satisfying result... (and even then it's not perfect)
     int minX = std::max(0, x - brushSizeH - 1);
     int minZ = std::max(0, z - brushSizeH - 1);
 
     int maxX = std::min(TERRAINRESOLUTION - 1, x + brushSizeH + 2);
     int maxZ = std::min(TERRAINRESOLUTION - 1, z + brushSizeH + 2);
 
+    Vector3 hitPos = clickPos;
+    hitPos.y = 0.f;
+
+    // Distance from what we will use as the center vertex, to the clicked position
+    float centerDistance = Vector3::DistanceSquared(m_terrainGeometry[z][x].position, clickPos);
+
+    // Move vertices
     for (int i = minZ; i < maxZ; ++i)
     {
         for (int j = minX; j < maxX; ++j)
         {
-            float vertexHeight = m_terrainGeometry[i][j].position.y;
+            const float currentHeight = m_terrainGeometry[i][j].position.y;
 
+            // Calculate the weight of the displacement for the current vertex based on its distance from the point the user clicked
+            float weight = std::min(1.f, centerDistance / Vector3::DistanceSquared(m_terrainGeometry[i][j].position, clickPos)) * MAGNITUDE;
+
+            float newHeight = 0.f;
             if (elevate)
-                m_terrainGeometry[i][j].position.y = std::min(vertexHeight + 1.f, 255.f * m_terrainHeightScale);
+                newHeight = std::min(currentHeight + weight, 255.f * m_terrainHeightScale);
             else
-                m_terrainGeometry[i][j].position.y = std::max(vertexHeight - 1.f, 0.f);
+                newHeight = std::max(currentHeight - weight, 0.f);
+
+            m_terrainGeometry[i][j].position.y = newHeight;
         }
     }
 
@@ -254,7 +269,6 @@ bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY,
     // Create ray
     Vector3 nearPoint(mouseX, mouseY, 0.f);
     Vector3 farPoint(mouseX, mouseY, 1.f);
-
     Vector3 nearPointUnprojected = viewport.Unproject(nearPoint, projection, view, world);
     Vector3 farPointUnprojected = viewport.Unproject(farPoint, projection, view, world);
 

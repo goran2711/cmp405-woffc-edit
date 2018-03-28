@@ -29,12 +29,15 @@
 // provides a game loop.
 class Game : public DX::IDeviceNotify
 {
-    constexpr static uint32_t STENCIL_SELECTED_OBJECT   = (1 << 0);
-    constexpr static uint32_t STENCIL_TERRAIN           = (1 << 1);
-    constexpr static uint32_t STENCIL_OBJECT            = (1 << 2);
+    enum StencilMask
+    {
+        STENCIL_SELECTED_OBJECT = (1 << 0),
+        STENCIL_TERRAIN         = (1 << 1),
+        STENCIL_OBJECT          = (1 << 2)
+    };
 
     // Perhaps this should be variable (proportional to brush width, for instance)
-    constexpr static float BRUSH_DECAL_DIMENSIONS       = 17.f;
+    constexpr static float BRUSH_DECAL_DIMENSIONS       = 30.f;
 
 public:
 	enum PickingMode
