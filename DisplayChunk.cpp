@@ -235,9 +235,6 @@ void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSi
     int maxX = std::min(TERRAINRESOLUTION - 1, x + brushSizeH + 2);
     int maxZ = std::min(TERRAINRESOLUTION - 1, z + brushSizeH + 2);
 
-    Vector3 hitPos = clickPos;
-    hitPos.y = 0.f;
-
     // Distance from what we will use as the center vertex, to the clicked position
     float centerDistance = Vector3::DistanceSquared(m_terrainGeometry[z][x].position, clickPos);
 

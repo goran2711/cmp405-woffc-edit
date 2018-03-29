@@ -410,8 +410,8 @@ void Game::Render()
             // NOTE: One thing to be weary of here is that the projector's near plane could potentially clip the terrain
             //        when doing terrain manipulation, since (currently) the BVH is not being regenerated as the geometry
             //        is displaced.
-            static const float PROJECTOR_FAR = 256.f;
-            static const float PROJECTOR_OFFSET = PROJECTOR_FAR - 1.f;
+            static constexpr float PROJECTOR_FAR = 256.f;
+            static constexpr float PROJECTOR_OFFSET = PROJECTOR_FAR - 1.f;
             XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, PROJECTOR_OFFSET, 0.f, 0.f);
 
             // Projector is focusing on a point below it (towards terrain)
