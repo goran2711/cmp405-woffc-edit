@@ -480,8 +480,11 @@ bool ToolMain::UpdateInput(MSG * msg)
                 m_dragging = false;
                 ClipCursor(nullptr);
             }
+            else if (m_brushActive)
+            {
+            }
             // Do picking if this is a normal click
-            else if (!m_brushActive)
+            else if (!m_cursorControlsCamera)
             {
                 // Get the ID of the object the user is clicking on (if any)
                 int id = -1;

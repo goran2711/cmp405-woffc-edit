@@ -42,7 +42,7 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
 
         for (int j = 0; j < 3; ++j)
         {
-            XMVECTOR vertex = XMLoadFloat3(triangle.v[j]);
+            XMVECTOR vertex = XMLoadFloat3(&triangle.v[j]);
 
             min = XMVectorMin(min, vertex);
             max = XMVectorMax(max, vertex);
@@ -61,7 +61,7 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
 
         for (int j = 0; j < 3; ++j)
         {
-            XMVECTOR vertex = XMLoadFloat3(triangle.v[j]);
+            XMVECTOR vertex = XMLoadFloat3(&triangle.v[j]);
             
             min = XMVectorMin(min, vertex);
             max = XMVectorMax(max, vertex);
@@ -147,7 +147,7 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
         // Calculate triangle center
         XMVECTOR center = XMVectorZero();
         for (int j = 0; j < 3; ++j)
-            center += XMLoadFloat3(triangle.v[j]);
+            center += XMLoadFloat3(&triangle.v[j]);
         center /= 3;
 
         // If triangle is on the left of the split position, it should be added to the left child--
@@ -176,7 +176,7 @@ bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) con
         {
             const Triangle& triangle = m_primitives[m_indices[node.leftFirst + i]];
 
-            if (ray.Intersects(*triangle.v[0], *triangle.v[1], *triangle.v[2], tempDist))
+            if (ray.Intersects(triangle.v[0], triangle.v[1], triangle.v[2], tempDist))
             {
                 if (tempDist < dist)
                     dist = tempDist;

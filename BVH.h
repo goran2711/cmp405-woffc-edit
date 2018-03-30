@@ -55,12 +55,12 @@ class BVH
         //     when refitting the structure--just recalculate the internal node's AABBs
         Triangle(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2)
         {
-            v[0] = &v0;
-            v[1] = &v1;
-            v[2] = &v2;
+            v[0] = v0;
+            v[1] = v1;
+            v[2] = v2;
         }
 
-        const XMFLOAT3* v[3];
+        XMFLOAT3 v[3];
     };
 
     struct BVHNode
