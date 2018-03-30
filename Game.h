@@ -153,9 +153,6 @@ private:
     ConstantBuffer<DecalMatrixBuffer>                                       m_decalMatrixBuffer;
 
 
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>                          m_projectorDSV;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_projectorSRV;
-
     // Selection highlighting
 	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
 	std::map<std::wstring, std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;

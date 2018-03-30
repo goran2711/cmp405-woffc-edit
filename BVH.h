@@ -3,8 +3,10 @@
 #include <DirectXMath.h>
 #include <DirectXCollision.h>
 #include <VertexTypes.h>
+#include <SimpleMath.h>
 
 #include <vector>
+#include <numeric>
 
 using namespace DirectX;
 
@@ -72,18 +74,24 @@ class BVH
         uint32_t count;
     };
 
-    static_assert(sizeof(BVHNode) == 32, "BVHNode is not nice and cache-sizedy");
-
 public:
+    BVH() = default;
+
     // NOTE: with terrain, vertices will be a 2d array... sooo boo
     template <size_t rows, size_t columns>
     BVH(const VertexPositionNormalTexture (&vertices)[rows][columns])
+    {
+        Initialise(vertices);
+    }
+
+    template <size_t rows, size_t columns>
+    void Initialise(const VertexPositionNormalTexture(&vertices)[rows][columns])
     {
         // Initialise primitive (triangle) array
         m_primitives.reserve(((rows - 1) * (columns - 1)) * 2);
         for (int z = 0; z < rows - 1; ++z)
         {
-            for (int x = 0; x < columns - 1; ++z)
+            for (int x = 0; x < columns - 1; ++x)
             {
                 // .position is just a public variable, and I don't expect terrainGeometry to move around in memory
                 // NOTE: Still bad tho, probably (definitely)
@@ -97,6 +105,8 @@ public:
             }
         }
 
+        //// TODO: Could move functionality that does not rely on the 2D "vertices" array into the .cpp file, so I don't
+        //         have to include headers such as <numeric> in the .h
         // Initialise index array
         m_indices.resize(m_primitives.size());
         std::iota(m_indices.begin(), m_indices.end(), 0);
@@ -115,21 +125,26 @@ public:
         Subdivide(*m_root);
     }
 
-private:
-    using ChildCounts = std::tuple<uint32_t, uint32_t>;
+    bool Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const;
 
+private:
     BoundingBox CalculateBounds(int first, int count) const;
 
-    void Subdivide(BVHNode& node);
+    void Subdivide(BVHNode& node, int depth = 0);
     void Partition(BVHNode& node);
 
-    ChildCounts XM_CALLCONV Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis);
+    using ChildCounts = std::tuple<uint32_t, uint32_t>;
+    ChildCounts XM_CALLCONV Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<int>& sortedIndices);
 
-    // Node array (know how many nodes to make? if not, can I use a vector instead?)
+    bool Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
+
+    // Node array
     BVHNode* m_root = nullptr;
-    std::vector<BVHNode> m_pool;
-    // TODO: Figure out why I initialise it to 2
-    size_t m_poolPtr = 2;
+    // NOTE: Node pool contains more nodes than are used--perhaps dynamically create new as it is being built?
+    //       - Would necessitate changing BVHNode& parameters to indices instead, since references would be invalidated
+    // TODO: Figure out why I cannot access vector elements when function is marked const (don't stick with mutable)
+    mutable std::vector<BVHNode> m_pool;
+    size_t m_poolPtr = 1;
     
     std::vector<Triangle> m_primitives;
     std::vector<int> m_indices;

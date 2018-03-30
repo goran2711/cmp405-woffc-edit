@@ -294,11 +294,10 @@ void Game::PostProcess(ID3D11DeviceContext* context)
             context->PSSetShader(m_decalPixelShader.Get(), nullptr, 0);
 
             // Textures
-            // NOTE: register(t0) is set to m_projectorSRV.Get() by SpriteBatch
-            ID3D11ShaderResourceView* textures[] = { m_depthStencilSRVCopy.Get(), m_brushMarkerDecalSRV.Get() };
-            context->PSSetShaderResources(1, 2, textures);
+            // NOTE: register(t0) is set to m_depthStencilSRVCopy.Get() by SpriteBatch
+            context->PSSetShaderResources(1, 1, m_brushMarkerDecalSRV.GetAddressOf());
         });
-        m_sprites->Draw(m_projectorSRV.Get(), fullscreenRect);
+        m_sprites->Draw(m_depthStencilSRVCopy.Get(), fullscreenRect);
         m_sprites->End();
 
         // Cleanup shader resources (not strictly necessary)
@@ -423,17 +422,6 @@ void Game::Render()
 
             XMStoreFloat4x4(&m_projectorView, projectorView);
             XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
-
-            // Render terrain to depth buffer from POV of projector
-            ID3D11RenderTargetView* nullRTV = nullptr;
-            context->OMSetRenderTargets(1, &nullRTV, m_projectorDSV.Get());
-
-            m_displayChunk.m_terrainEffect->SetView(projectorView);
-            m_displayChunk.m_terrainEffect->SetProjection(projectorProjection);
-            m_displayChunk.RenderBatch(m_deviceResources, true);
-
-            ID3D11RenderTargetView* defaultRTV = m_deviceResources->GetBackBufferRenderTargetView();
-            context->OMSetRenderTargets(1, &defaultRTV, m_deviceResources->GetDepthStencilView());
         }
     }
 
@@ -491,9 +479,6 @@ void Game::Clear()
     context->ClearRenderTargetView(m_rt1RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt2RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt3RTV.Get(), XMVectorSet(0.f, 0.f, 0.f, 0.f).m128_f32);
-
-    context->ClearDepthStencilView(m_projectorDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
 
 	// Set the viewport.
 	auto viewport = m_deviceResources->GetScreenViewport();
@@ -1212,20 +1197,6 @@ void Game::CreateWindowSizeDependentResources()
 
     // Decal volume
     m_volumeDecal->SetPixelSize(m_deviceResources->GetD3DDeviceContext(), viewport.Width, viewport.Height);
-
-
-    // Create depth stencil buffer for use with projecting decals onto the terrain
-    CD3D11_TEXTURE2D_DESC depthTexDesc(DXGI_FORMAT_R24G8_TYPELESS, viewport.Width, viewport.Height, 1, 0, D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE);
-
-    ComPtr<ID3D11Texture2D> depthTex;
-    device->CreateTexture2D(&depthTexDesc, nullptr, depthTex.ReleaseAndGetAddressOf());
-
-    CD3D11_SHADER_RESOURCE_VIEW_DESC depthSRVDesc(D3D11_SRV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
-    device->CreateShaderResourceView(depthTex.Get(), &depthSRVDesc, m_projectorSRV.ReleaseAndGetAddressOf());
-
-    CD3D11_DEPTH_STENCIL_VIEW_DESC depthDSVDesc(D3D11_DSV_DIMENSION_TEXTURE2D, DXGI_FORMAT_D24_UNORM_S8_UINT);
-    device->CreateDepthStencilView(depthTex.Get(), &depthDSVDesc, m_projectorDSV.ReleaseAndGetAddressOf());
-
 
     device->CreateTexture2D(&m_deviceResources->dsTexDesc, nullptr, m_depthStencilTexCopy.ReleaseAndGetAddressOf());
     device->CreateShaderResourceView(m_depthStencilTexCopy.Get(), &m_deviceResources->srvDesc, m_depthStencilSRVCopy.ReleaseAndGetAddressOf());

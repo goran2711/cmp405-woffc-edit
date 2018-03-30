@@ -1,11 +1,26 @@
 #include "BVH.h"
-#include <numeric>
 #include <tuple>
+#include <algorithm>
 
 // Macros are the worst...
 #ifdef max
 #undef max
 #endif
+
+bool BVH::Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const
+{
+    float dist;
+    if (!ray.Intersects(m_root->bounds, dist))
+        return false;
+
+    if (Intersects(*m_root, ray, dist))
+    {
+        hit = ray.position + (ray.direction * dist);
+        return true;
+    }
+
+    return false;
+}
 
 BoundingBox BVH::CalculateBounds(int first, int count) const
 {
@@ -56,22 +71,21 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
     return bounds;
 }
 
-void BVH::Subdivide(BVHNode& node)
+void BVH::Subdivide(BVHNode& node, int depth)
 {
     // NOTE: Exit condition: stop subdividing if this new leaf has a minimum number of primitives
     //       (can also add if we reached a certain depth)
-    if (node.count < 2) // Allow minimum 1 primitive for each child
+    // BUG: Stack overflow with nodes that have .count == 2 and don't split before depth > 20
+    if (node.count < 4 /*|| depth > 1500*/) // Allow minimum 1 primitive for each child
         return;
 
-    // TODO: Partition node
-    //       - Pay careful attention to node's leftFirst and count--they need to be set appropriately (to poolPtr and 0) when initialising children (CalculateBounds, etc.)
-    //         and subdividing them, but at the same time they need to be correct when sorting children
+    // Partiton node (creates its two children)
     // NOTE: Partition turns the node into an internal node
     Partition(node);
 
     // Subdivide node's children
-    Subdivide(m_pool[node.leftFirst + 0]);  // Left child
-    Subdivide(m_pool[node.leftFirst + 1]);  // Right child
+    Subdivide(m_pool[node.leftFirst + 0], depth + 1);  // Left child
+    Subdivide(m_pool[node.leftFirst + 1], depth + 1);  // Right child
 }
 
 void BVH::Partition(BVHNode& node)
@@ -80,8 +94,7 @@ void BVH::Partition(BVHNode& node)
     const uint32_t first = node.leftFirst;
     const uint32_t last = first + node.count;
 
-    //// TODO: Split and sort primitives
-    ///        - Pretty confused about this part at the moment
+    //// Split and sort primitives
     // Determine where to split
     XMVECTOR splitPos = XMLoadFloat3(&node.bounds.Center);
 
@@ -91,7 +104,11 @@ void BVH::Partition(BVHNode& node)
     float extentZ = node.bounds.Extents.z;
     uint8_t splitAxis = (extentX > extentY && extentX > extentZ ? 0 : (extentY > extentZ ? 1 : 2));
     
-    ChildCounts childCounts = Split(first, last, splitPos, splitAxis);
+    // NOTE: Wasteful on memory
+    std::vector<int> sortedIndices(m_indices.size());
+    ChildCounts childCounts = Split(first, last, splitPos, splitAxis, sortedIndices);
+
+    std::copy(sortedIndices.cbegin() + first, sortedIndices.cbegin() + last, m_indices.begin() + first);
 
     // Make parent internal node
     node.leftFirst = m_poolPtr;
@@ -109,7 +126,7 @@ void BVH::Partition(BVHNode& node)
     childR.bounds = CalculateBounds(childR.leftFirst, childR.count);
 }
 
-auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis) -> ChildCounts
+auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<int>& sortedIndices) -> ChildCounts
 {
     assert(first < m_primitives.size());
 
@@ -117,7 +134,7 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
     uint32_t countLeft = 0;
     uint32_t countRight = 0;
 
-    // TODO: Compare the center of my triangles to the splitPos
+    // Compare the centre of the triangles to the splitPos
     for (int i = first; i < last; ++i)
     {
         const Triangle& triangle = m_primitives[ m_indices[i] ];
@@ -131,10 +148,52 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
         // If triangle is on the left of the split position, it should be added to the left child--
         // meaning m_indices[i] should be moved to the countLeft side of the array
         if (center.m128_f32[splitAxis] < splitPos.m128_f32[splitAxis])
-            m_indices[countLeft++] = i;
+            sortedIndices[first + countLeft++] = m_indices[i];
         else
-            m_indices[last - 1 - countRight++] = i;
+            sortedIndices[last - 1 - countRight++] = m_indices[i];
     }
 
     return std::make_tuple(countLeft, countRight);
+}
+
+bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) const
+{
+    float tempDist;
+    if (!ray.Intersects(node.bounds, tempDist))
+        return false;
+
+    dist = std::numeric_limits<float>::max();
+    // Node is a leaf
+    if (node.count > 0)
+    {
+        // Check for intersection with triangles
+        for (int i = 0; i < node.count; ++i)
+        {
+            const Triangle& triangle = m_primitives[m_indices[node.leftFirst + i]];
+
+            if (ray.Intersects(*triangle.v[0], *triangle.v[1], *triangle.v[2], tempDist))
+            {
+                if (tempDist < dist)
+                    dist = tempDist;
+            }
+        }
+    }
+    // Node is internal
+    else
+    {
+        // Check for intersection with children
+        if (Intersects(m_pool[node.leftFirst + 0], ray, tempDist))
+        {
+            if (tempDist < dist)
+                dist = tempDist;
+        }
+
+        if (Intersects(m_pool[node.leftFirst + 1], ray, tempDist))
+        {
+            if (tempDist < dist)
+                dist = tempDist;
+        }
+    }
+
+    return (dist < std::numeric_limits<float>::max());
 }

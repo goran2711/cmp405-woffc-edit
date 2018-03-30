@@ -3,7 +3,8 @@
 #include "DeviceResources.h"
 #include "ChunkObject.h"
 
-#include "Octree.h"
+//#include "Octree.h"
+#include "BVH.h"
 
 //geometric resoltuion - note,  hard coded.
 #define TERRAINRESOLUTION 128
@@ -14,7 +15,7 @@ public:
 	DisplayChunk();
 	~DisplayChunk();
 	void PopulateChunkData(ChunkObject * SceneChunk);
-	void RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources, bool projectiveTexturing = false);
+	void RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources);
 	void InitialiseBatch();	//initial setup, base coordinates etc based on scale
 	void LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResources);
 	void SaveHeightMap();			//saves the heigtmap back to file.
@@ -36,7 +37,7 @@ private:
 	DirectX::VertexPositionNormalTexture m_terrainGeometry[TERRAINRESOLUTION][TERRAINRESOLUTION];
 	BYTE m_heightMap[TERRAINRESOLUTION*TERRAINRESOLUTION];
 
-    Octree m_bvh;
+    BVH m_bvh;
 
 	void CalculateTerrainNormals();
 
