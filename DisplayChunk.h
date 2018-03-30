@@ -3,7 +3,6 @@
 #include "DeviceResources.h"
 #include "ChunkObject.h"
 
-//#include "Octree.h"
 #include "BVH.h"
 
 //geometric resoltuion - note,  hard coded.

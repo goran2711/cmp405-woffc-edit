@@ -79,36 +79,7 @@ void DisplayChunk::InitialiseBatch()
     }
 
     // initialise bvh
-    //index = (TERRAINRESOLUTION * (TERRAINRESOLUTION - 1)) + (TERRAINRESOLUTION - 1);
-    //Vector3 max((TERRAINRESOLUTION - 1) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize),
-    //            m_terrainHeightScale,
-    //            (TERRAINRESOLUTION - 1) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize));
-
-    //Vector3 min((0) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize),
-    //            0,
-    //            (0) * m_terrainPositionScalingFactor - (0.5f * m_terrainSize));
-
-    //BoundingBox rootBB;
-    //BoundingBox::CreateFromPoints(rootBB, min, max);
-
     m_bvh.Initialise(m_terrainGeometry);
-    //m_bvh.Initialise(rootBB);
-
-    //for (size_t i = 0; i < TERRAINRESOLUTION - 1; i++)	//looping through QUADS.  so we subtrack one from the terrain array or it will try to draw a quad starting with the last vertex in each row. Which wont work
-    //{
-    //    for (size_t j = 0; j < TERRAINRESOLUTION - 1; j++)//same as above
-    //    {
-    //        Vector3 bottomLeft = m_terrainGeometry[i][j].position;
-    //        Vector3 bottomRight = m_terrainGeometry[i][j + 1].position;
-    //        Vector3 topRight = m_terrainGeometry[i + 1][j + 1].position;
-    //        Vector3 topLeft = m_terrainGeometry[i + 1][j].position;
-
-    //        m_bvh.Insert({ bottomLeft, bottomRight, topRight });
-    //        m_bvh.Insert({ bottomLeft, topRight, topLeft });
-    //    }
-    //}
-
-    //m_bvh.Build();
 
     CalculateTerrainNormals();
 }

@@ -392,6 +392,7 @@ void Game::Render()
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
     // Terrain brush decal
+    // TODO: Move outside of render (no longer any reason to have it inside here--if there ever was one)
     if (m_showTerrainBrush)
     {
         // Check if (and where) cursor intersects with terrain
@@ -418,6 +419,7 @@ void Game::Render()
             XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
 
             // Use orthogoraphic projection
+            // FIX: Should not be recreated every frame
             XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.01f, PROJECTOR_FAR);
 
             XMStoreFloat4x4(&m_projectorView, projectorView);
