@@ -1,6 +1,7 @@
 #include "BVH.h"
 #include <tuple>
 #include <algorithm>
+#include <numeric>
 
 // Macros are the worst...
 #ifdef max
@@ -25,6 +26,28 @@ bool BVH::Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const
 void BVH::Refit()
 {
     Refit(*m_root);
+}
+
+void BVH::InitialiseIndexArray(size_t size)
+{
+    m_indices.resize(size);
+    std::iota(m_indices.begin(), m_indices.end(), 0);
+}
+
+void BVH::InitialiseNodes(size_t size)
+{
+    // Initialise node pool and root
+    m_pool.resize(size * 2 - 1);
+    m_root = &m_pool[0];
+
+    // Root starts as a leaf with all the primitives within it
+    m_root->leftFirst = 0;
+    m_root->count = size;
+
+    m_root->bounds = CalculateBounds(m_root->leftFirst, m_root->count);
+
+    // Subdivide root
+    Subdivide(*m_root);
 }
 
 BoundingBox BVH::CalculateBounds(int first, int count) const

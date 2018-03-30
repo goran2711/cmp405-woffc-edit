@@ -482,6 +482,7 @@ bool ToolMain::UpdateInput(MSG * msg)
             }
             else if (m_brushActive)
             {
+                // TODO: Refit BVH
             }
             // Do picking if this is a normal click
             else if (!m_cursorControlsCamera)

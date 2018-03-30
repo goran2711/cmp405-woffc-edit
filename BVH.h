@@ -6,7 +6,6 @@
 #include <SimpleMath.h>
 
 #include <vector>
-#include <numeric>
 
 using namespace DirectX;
 
@@ -85,7 +84,7 @@ public:
     }
 
     template <size_t rows, size_t columns>
-    void Initialise(const VertexPositionNormalTexture(&vertices)[rows][columns])
+    void Initialise(const VertexPositionNormalTexture (&vertices)[rows][columns])
     {
         // Initialise primitive (triangle) array
         m_primitives.reserve(((rows - 1) * (columns - 1)) * 2);
@@ -105,24 +104,8 @@ public:
             }
         }
 
-        //// TODO: Could move functionality that does not rely on the 2D "vertices" array into the .cpp file, so I don't
-        //         have to include headers such as <numeric> in the .h
-        // Initialise index array
-        m_indices.resize(m_primitives.size());
-        std::iota(m_indices.begin(), m_indices.end(), 0);
-
-        // Initialise node pool and root
-        m_pool.resize(m_primitives.size() * 2 - 1);
-        m_root = &m_pool[0];
-
-        // Root starts as a leaf with all the primitives within it
-        m_root->leftFirst = 0;
-        m_root->count = m_primitives.size();
-
-        m_root->bounds = CalculateBounds(m_root->leftFirst, m_root->count);
-
-        // Subdivide root
-        Subdivide(*m_root);
+        InitialiseIndexArray(m_primitives.size());
+        InitialiseNodes(m_primitives.size());
     }
 
     bool Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const;
@@ -130,6 +113,9 @@ public:
     void Refit();
 
 private:
+    void InitialiseIndexArray(size_t size);
+    void InitialiseNodes(size_t size);
+
     BoundingBox CalculateBounds(int first, int count) const;
 
     void Subdivide(BVHNode& node, int depth = 0);
