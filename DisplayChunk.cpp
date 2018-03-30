@@ -115,7 +115,6 @@ void DisplayChunk::InitialiseBatch()
     m_bvh.Build();
 
     CalculateTerrainNormals();
-
 }
 
 void DisplayChunk::LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResources)
