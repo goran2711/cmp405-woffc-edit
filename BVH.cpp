@@ -22,6 +22,11 @@ bool BVH::Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const
     return false;
 }
 
+void BVH::Refit()
+{
+    Refit(*m_root);
+}
+
 BoundingBox BVH::CalculateBounds(int first, int count) const
 {
     assert(first < m_indices.size());
@@ -196,4 +201,20 @@ bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) con
     }
 
     return (dist < std::numeric_limits<float>::max());
+}
+
+void BVH::Refit(BVHNode & node)
+{
+    if (node.count > 0)
+        node.bounds = CalculateBounds(node.leftFirst, node.count);
+    else
+    {
+        BVHNode& childL = m_pool[node.leftFirst + 0];
+        BVHNode& childR = m_pool[node.leftFirst + 1];
+
+        Refit(childL);
+        Refit(childR);
+
+        BoundingBox::CreateMerged(node.bounds, childL.bounds, childR.bounds);
+    }
 }

@@ -127,6 +127,8 @@ public:
 
     bool Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const;
 
+    void Refit();
+
 private:
     BoundingBox CalculateBounds(int first, int count) const;
 
@@ -137,6 +139,8 @@ private:
     ChildCounts XM_CALLCONV Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<int>& sortedIndices);
 
     bool Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
+
+    void Refit(BVHNode& node);
 
     // Node array
     BVHNode* m_root = nullptr;
