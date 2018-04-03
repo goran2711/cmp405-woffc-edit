@@ -14,7 +14,7 @@ public:
 	DisplayChunk();
 	~DisplayChunk();
 	void PopulateChunkData(ChunkObject * SceneChunk);
-	void RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources);
+	void XM_CALLCONV RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources, DirectX::FXMMATRIX view, DirectX::CXMMATRIX projection);
 	void InitialiseBatch();	//initial setup, base coordinates etc based on scale
 	void LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResources);
 	void SaveHeightMap();			//saves the heigtmap back to file.

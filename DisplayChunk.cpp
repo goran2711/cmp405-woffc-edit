@@ -42,7 +42,7 @@ void DisplayChunk::PopulateChunkData(ChunkObject * SceneChunk)
     m_tex_splat_4_tiling = SceneChunk->tex_splat_4_tiling;
 }
 
-void DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources)
+void XM_CALLCONV DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResources, FXMMATRIX view, CXMMATRIX projection)
 {
     auto context = DevResources->GetD3DDeviceContext();
 
@@ -58,6 +58,8 @@ void DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources>  DevResource
         }
     }
     m_batch->End();
+
+    m_bvh.DebugRender(context, view, projection, 12);
 }
 
 void DisplayChunk::InitialiseBatch()
@@ -138,6 +140,9 @@ void DisplayChunk::LoadHeightMap(std::shared_ptr<DX::DeviceResources>  DevResour
     );
 
     m_batch = std::make_unique<PrimitiveBatch<VertexPositionNormalTexture>>(devicecontext);
+
+    // FIX: Temporary
+    m_bvh.InitialiseDebugVisualiastion(devicecontext);
 }
 
 void DisplayChunk::SaveHeightMap()
@@ -185,7 +190,7 @@ void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSi
     // TODO: Some check to ensure it is within bounds (well.. cursor-terrain test will never be true outside the terrain, sooo...)
 
     // Controls the speed at which vertices are displaced
-    static const float MAGNITUDE = 1.5f;
+    static const float MAGNITUDE = 3.f;
     
     // Transform to grid coordinates
     int x = (XMVectorGetX(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
@@ -201,8 +206,14 @@ void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSi
     int maxX = std::min(TERRAINRESOLUTION - 1, x + brushSizeH + 2);
     int maxZ = std::min(TERRAINRESOLUTION - 1, z + brushSizeH + 2);
 
+    XMVECTOR pos = clickPos;
+    pos = XMVectorSetY(pos, 0.f);
+
     // Distance from what we will use as the center vertex, to the clicked position
-    float centerDistance = Vector3::DistanceSquared(m_terrainGeometry[z][x].position, clickPos);
+    Vector3 nearestPos = m_terrainGeometry[z][x].position;
+    nearestPos.y = 0.f;
+
+    float centerDistance = Vector3::Distance(nearestPos, pos);
 
     // Move vertices
     for (int i = minZ; i < maxZ; ++i)
@@ -212,20 +223,28 @@ void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSi
             const float currentHeight = m_terrainGeometry[i][j].position.y;
 
             // Calculate the weight of the displacement for the current vertex based on its distance from the point the user clicked
-            float weight = std::min(1.f, centerDistance / Vector3::DistanceSquared(m_terrainGeometry[i][j].position, clickPos)) * MAGNITUDE;
+            // FIX: Need a better way to calculate weight--right now, this method acts weird without the std::min, and std::min is just a band-aid,
+            //      it's still not perfect
+            //      - Could the problem be that I'm selecting the nearest vertex in grid space? Grid space distance ignores height
+            Vector3 p = m_terrainGeometry[i][j].position;
+            p.y = 0.f;
+
+            float weight = std::min(1.f, centerDistance / Vector3::Distance(p, pos));
+
+            float displacement = weight * MAGNITUDE;
 
             float newHeight = 0.f;
             if (elevate)
-                newHeight = std::min(currentHeight + weight, 255.f * m_terrainHeightScale);
+                newHeight = std::min(currentHeight + displacement, 255.f * m_terrainHeightScale);
             else
-                newHeight = std::max(currentHeight - weight, 0.f);
+                newHeight = std::max(currentHeight - displacement, 0.f);
 
             m_terrainGeometry[i][j].position.y = newHeight;
         }
     }
 
     CalculateTerrainNormals();
-    //m_bvh.Refit();
+    m_bvh.Refit();
 }
 
 bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const SimpleMath::Viewport & viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord) const

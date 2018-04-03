@@ -7,6 +7,9 @@
 
 #include <vector>
 
+// Debug stuff
+#include <GeometricPrimitive.h>
+
 using namespace DirectX;
 
 //// NOTES
@@ -54,12 +57,12 @@ class BVH
         //     when refitting the structure--just recalculate the internal node's AABBs
         Triangle(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2)
         {
-            v[0] = v0;
-            v[1] = v1;
-            v[2] = v2;
+            v[0] = &v0;
+            v[1] = &v1;
+            v[2] = &v2;
         }
 
-        XMFLOAT3 v[3];
+        const XMFLOAT3* v[3];
     };
 
     struct BVHNode
@@ -112,6 +115,9 @@ public:
 
     void Refit();
 
+    void InitialiseDebugVisualiastion(ID3D11DeviceContext* context);
+    void XM_CALLCONV DebugRender(ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int depth);
+
 private:
     void InitialiseIndexArray(size_t size);
     void InitialiseNodes(size_t size);
@@ -128,6 +134,8 @@ private:
 
     void Refit(BVHNode& node);
 
+    void XM_CALLCONV DebugRender(BVHNode& node, ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int currentDepth, int depth);
+
     // Node array
     BVHNode* m_root = nullptr;
     // NOTE: Node pool contains more nodes than are used--perhaps dynamically create new as it is being built?
@@ -138,5 +146,8 @@ private:
     
     std::vector<Triangle> m_primitives;
     std::vector<int> m_indices;
+
+    // Debug visualisation stuff
+    std::unique_ptr<GeometricPrimitive> m_box;
 };
 

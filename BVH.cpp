@@ -3,7 +3,11 @@
 #include <algorithm>
 #include <numeric>
 
-// Macros are the worst...
+// bad macros are bad
+#ifdef min
+#undef min
+#endif
+
 #ifdef max
 #undef max
 #endif
@@ -26,6 +30,17 @@ bool BVH::Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const
 void BVH::Refit()
 {
     Refit(*m_root);
+}
+
+void BVH::InitialiseDebugVisualiastion(ID3D11DeviceContext* context)
+{
+    static const XMFLOAT3 size(2.f, 2.f, 2.f);
+    m_box = GeometricPrimitive::CreateBox(context, size);
+}
+
+void XM_CALLCONV BVH::DebugRender(ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int depth)
+{
+    DebugRender(*m_root, context, view, projection, 0, depth);
 }
 
 void BVH::InitialiseIndexArray(size_t size)
@@ -65,7 +80,7 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
 
         for (int j = 0; j < 3; ++j)
         {
-            XMVECTOR vertex = XMLoadFloat3(&triangle.v[j]);
+            XMVECTOR vertex = XMLoadFloat3(triangle.v[j]);
 
             min = XMVectorMin(min, vertex);
             max = XMVectorMax(max, vertex);
@@ -84,7 +99,7 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
 
         for (int j = 0; j < 3; ++j)
         {
-            XMVECTOR vertex = XMLoadFloat3(&triangle.v[j]);
+            XMVECTOR vertex = XMLoadFloat3(triangle.v[j]);
             
             min = XMVectorMin(min, vertex);
             max = XMVectorMax(max, vertex);
@@ -104,7 +119,8 @@ void BVH::Subdivide(BVHNode& node, int depth)
     // NOTE: Exit condition: stop subdividing if this new leaf has a minimum number of primitives
     //       (can also add if we reached a certain depth)
     // BUG: Stack overflow with nodes that have .count == 2 and don't split before depth > 20
-    if (node.count < 4 /*|| depth > 1500*/) // Allow minimum 1 primitive for each child
+    // FIX: Very suceptible to stack overflows at the moment--a better splitting strategy may help
+    if (node.count < 4 || depth > 16)
         return;
 
     // Partiton node (creates its two children)
@@ -126,6 +142,7 @@ void BVH::Partition(BVHNode& node)
     // Determine where to split
     XMVECTOR splitPos = XMLoadFloat3(&node.bounds.Center);
 
+    // Just split 50/50 along the largest axis
     // NOTE: Gross..
     float extentX = node.bounds.Extents.x;
     float extentY = node.bounds.Extents.y;
@@ -170,7 +187,7 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
         // Calculate triangle center
         XMVECTOR center = XMVectorZero();
         for (int j = 0; j < 3; ++j)
-            center += XMLoadFloat3(&triangle.v[j]);
+            center += XMLoadFloat3(triangle.v[j]);
         center /= 3;
 
         // If triangle is on the left of the split position, it should be added to the left child--
@@ -199,7 +216,7 @@ bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) con
         {
             const Triangle& triangle = m_primitives[m_indices[node.leftFirst + i]];
 
-            if (ray.Intersects(triangle.v[0], triangle.v[1], triangle.v[2], tempDist))
+            if (ray.Intersects(*triangle.v[0], *triangle.v[1], *triangle.v[2], tempDist))
             {
                 if (tempDist < dist)
                     dist = tempDist;
@@ -226,9 +243,10 @@ bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) con
     return (dist < std::numeric_limits<float>::max());
 }
 
-void BVH::Refit(BVHNode & node)
+void BVH::Refit(BVHNode& node)
 {
     if (node.count > 0)
+        // Update leaf node bounding box (to fit primitives)
         node.bounds = CalculateBounds(node.leftFirst, node.count);
     else
     {
@@ -238,6 +256,29 @@ void BVH::Refit(BVHNode & node)
         Refit(childL);
         Refit(childR);
 
+        // Update internal node bounding box (to fit children)
         BoundingBox::CreateMerged(node.bounds, childL.bounds, childR.bounds);
     }
+}
+
+void XM_CALLCONV BVH::DebugRender(BVHNode& node, ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int currentDepth, int depth)
+{
+    // Only render nodes at the requested depth
+    if (currentDepth == depth)
+    {
+        XMVECTOR position = XMLoadFloat3(&node.bounds.Center);
+        XMVECTOR extents = XMLoadFloat3(&node.bounds.Extents);
+
+        XMMATRIX world = XMMatrixIdentity() * XMMatrixScalingFromVector(extents) * XMMatrixTranslationFromVector(position);
+        m_box->Draw(world, view, projection, Colors::Red, nullptr, true);
+    }
+    else if (currentDepth > depth)
+        return;
+
+    // Leaf nodes have no children to render
+    if (node.count > 0)
+        return;
+
+    DebugRender(m_pool[node.leftFirst + 0], context, view, projection, currentDepth + 1, depth);
+    DebugRender(m_pool[node.leftFirst + 1], context, view, projection, currentDepth + 1, depth);
 }
