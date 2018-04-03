@@ -12,6 +12,13 @@
 #undef max
 #endif
 
+namespace
+{
+    // Have to add/subtract one to get around some overflow(?) weirdness
+    const XMVECTOR MAX = XMVectorSplatOne() * std::numeric_limits<float>::max();
+    const XMVECTOR MIN = XMVectorSplatOne() * std::numeric_limits<float>::lowest();
+}
+
 bool BVH::Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const
 {
     float dist;
@@ -71,12 +78,12 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
 
     BoundingBox bounds;
 
-    XMVECTOR min = XMVectorSplatOne() * std::numeric_limits<float>::max();
-    XMVECTOR max = -min;
+    XMVECTOR min = MAX;
+    XMVECTOR max = MIN;
 
     // Initialise bounding box
     {
-        const Triangle& triangle = m_primitives[ m_indices[first] ];
+        const Triangle& triangle = m_primitives[m_indices[first]];
 
         for (int j = 0; j < 3; ++j)
         {
@@ -92,15 +99,15 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
     // Expand bounding box
     for (int i = first + 1; i < first + count; ++i)
     {
-        const Triangle& triangle = m_primitives[ m_indices[i] ];
+        const Triangle& triangle = m_primitives[m_indices[i]];
 
-        min = XMVectorSplatOne() * std::numeric_limits<float>::max();
-        max = -min;
+        min = MAX;
+        max = MIN;
 
         for (int j = 0; j < 3; ++j)
         {
             XMVECTOR vertex = XMLoadFloat3(triangle.v[j]);
-            
+
             min = XMVectorMin(min, vertex);
             max = XMVectorMax(max, vertex);
         }
@@ -148,7 +155,7 @@ void BVH::Partition(BVHNode& node)
     float extentY = node.bounds.Extents.y;
     float extentZ = node.bounds.Extents.z;
     uint8_t splitAxis = (extentX > extentY && extentX > extentZ ? 0 : (extentY > extentZ ? 1 : 2));
-    
+
     // NOTE: Wasteful on memory
     std::vector<int> sortedIndices(m_indices.size());
     ChildCounts childCounts = Split(first, last, splitPos, splitAxis, sortedIndices);
@@ -182,7 +189,7 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
     // Compare the centre of the triangles to the splitPos
     for (int i = first; i < last; ++i)
     {
-        const Triangle& triangle = m_primitives[ m_indices[i] ];
+        const Triangle& triangle = m_primitives[m_indices[i]];
 
         // Calculate triangle center
         XMVECTOR center = XMVectorZero();

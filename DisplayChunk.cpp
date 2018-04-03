@@ -59,7 +59,7 @@ void XM_CALLCONV DisplayChunk::RenderBatch(std::shared_ptr<DX::DeviceResources> 
     }
     m_batch->End();
 
-    m_bvh.DebugRender(context, view, projection, 12);
+    //m_bvh.DebugRender(context, view, projection, 8);
 }
 
 void DisplayChunk::InitialiseBatch()
