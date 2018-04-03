@@ -390,43 +390,6 @@ void Game::Render()
 
     context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
 
-    // Terrain brush decal
-    // TODO: Move outside of render (no longer any reason to have it inside here--if there ever was one)
-    if (m_showTerrainBrush)
-    {
-        // Check if (and where) cursor intersects with terrain
-        XMVECTOR wsCoord;
-        if (m_displayChunk.CursorIntersectsTerrain(inputCommands.mouseX, inputCommands.mouseY, SimpleMath::Viewport(m_deviceResources->GetScreenViewport()), m_projection, m_view, m_world, wsCoord))
-        {
-            // If the player is trying to manipulate the terrain at this location
-            // FIX: Absolutely not the right place to do this, but just for fun
-            if (inputCommands.leftMouseDown || inputCommands.rightMouseDown)
-            {
-                m_displayChunk.ManipulateTerrain(wsCoord, BRUSH_DECAL_DIMENSIONS, inputCommands.leftMouseDown);
-            }
-
-            // Projector position a little bit above the area the cursor is hovering over
-            // NOTE: One thing to be weary of here is that the projector's near plane could potentially clip the terrain
-            //        when doing terrain manipulation, since (currently) the BVH is not being regenerated as the geometry
-            //        is displaced.
-            static constexpr float PROJECTOR_FAR = 256.f;
-            static constexpr float PROJECTOR_OFFSET = PROJECTOR_FAR - 1.f;
-            XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, PROJECTOR_OFFSET, 0.f, 0.f);
-
-            // Projector is focusing on a point below it (towards terrain)
-            XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
-            XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
-
-            // Use orthogoraphic projection
-            // FIX: Should not be recreated every frame
-            XMMATRIX projectorProjection = XMMatrixOrthographicLH(BRUSH_DECAL_DIMENSIONS, BRUSH_DECAL_DIMENSIONS, 0.01f, PROJECTOR_FAR);
-
-            XMStoreFloat4x4(&m_projectorView, projectorView);
-            XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
-        }
-    }
-
-
     PostProcess(context);
 
 	// DRAW SELECTION RECT
@@ -999,9 +962,42 @@ bool Game::PickWithinScreenRectangle(RECT selectionRect, std::vector<int>& selec
 	return !selections.empty();
 }
 
-void Game::SetBrushActive(bool val)
+bool Game::CursorIntersectsTerrain(long cursorX, long cursorY, DirectX::XMVECTOR & wsCoord, float brushSize)
 {
-    m_showTerrainBrush = val;
+    bool intersectsTerrain = m_displayChunk.CursorIntersectsTerrain(cursorX, cursorY, SimpleMath::Viewport(m_deviceResources->GetScreenViewport()), m_projection, m_view, m_world, wsCoord);
+
+    // Check if (and where) cursor intersects with terrain
+    if (intersectsTerrain)
+    {
+
+        // Projector position a little bit above the area the cursor is hovering over
+        // NOTE: One thing to be weary of here is that the projector's near plane could potentially clip the terrain
+        //        when doing terrain manipulation, since (currently) the BVH is not being regenerated as the geometry
+        //        is displaced.
+        static constexpr float PROJECTOR_FAR = 256.f;
+        static constexpr float PROJECTOR_OFFSET = PROJECTOR_FAR - 1.f;
+        XMVECTOR projectorPosition = wsCoord + XMVectorSet(0.f, PROJECTOR_OFFSET, 0.f, 0.f);
+    
+        // Projector is focusing on a point below it (towards terrain)
+        XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
+        XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
+    
+        // Use orthogoraphic projection
+        // FIX: Should not be recreated every frame
+        XMMATRIX projectorProjection = XMMatrixOrthographicLH(brushSize, brushSize, 0.01f, PROJECTOR_FAR);
+    
+        XMStoreFloat4x4(&m_projectorView, projectorView);
+        XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
+    }
+    
+    m_showTerrainBrush = intersectsTerrain;
+    return intersectsTerrain;
+}
+
+void XM_CALLCONV Game::ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize)
+{
+    // If the player is trying to manipulate the terrain at this location
+    m_displayChunk.ManipulateTerrain(wsCoord, brushSize, elevate);
 }
 
 #ifdef DXTK_AUDIO

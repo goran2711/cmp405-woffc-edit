@@ -12,12 +12,6 @@ struct InputCommands
 	long mouseDX;
 	long mouseDY;
 
-    long mouseX;
-    long mouseY;
-
-    bool leftMouseDown;
-    bool rightMouseDown;
-
 	struct
 	{
 		long x, y;

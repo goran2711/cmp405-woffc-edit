@@ -86,7 +86,8 @@ public:
 	bool Pick(POINT cursorPos, RECT clientRect, int& id) const;
 	bool PickWithinScreenRectangle(RECT selectionRect, std::vector<int>& selections, PickingMode invert = PICK_NORMAL) const;
 
-    void SetBrushActive(bool val);
+    bool CursorIntersectsTerrain(long cursorX, long cursorY, DirectX::XMVECTOR& wsCoord, float brushSize = BRUSH_DECAL_DIMENSIONS);
+    void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize = BRUSH_DECAL_DIMENSIONS);
 
 #ifdef DXTK_AUDIO
 	void NewAudioDevice();

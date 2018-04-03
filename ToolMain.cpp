@@ -268,9 +268,6 @@ void ToolMain::Tick(MSG *msg)
         //add to scenegraph
         //resend scenegraph to Direct X renderer
 
-    m_toolInputCommands.mouseX = m_cursorPos.x;
-    m_toolInputCommands.mouseY = m_cursorPos.y;
-
     if (m_captureCursorThisFrame)
     {
         captureMouse(!m_cursorCaptured, (!m_cursorCaptured && m_captureCursorForCameraThisFrame));
@@ -324,12 +321,13 @@ void ToolMain::Tick(MSG *msg)
 
         SetCursorPos(clientCenterScreen.x, clientCenterScreen.y);
     }
-            // TODO: Add terrain manipulation functionality
-            //       - How do I want to detect and handle mouse clicks?
-            //         - DirectX::Mouse object is inside Game, so I cannot query it in ToolMain--move it out?
-            //           - Try moving DirectXTK HDI classes to ToolMain and see how that is--may be able to get rid of
-            //             or simplify "InputCommands"
-            //           - Ask how Discord would do it
+    else if (m_brushActive)
+    {
+        XMVECTOR wsCoord;
+        if (m_d3dRenderer.CursorIntersectsTerrain(m_cursorPos.x, m_cursorPos.y, wsCoord))
+        {
+        }
+    }
 
     // If the user is clicking and dragging (creating a selection box)
     if (m_dragging)
@@ -375,8 +373,6 @@ void ToolMain::ToggleBrush()
 
     // Clear selections as well
     m_selectedObjects.clear();
-
-    m_d3dRenderer.SetBrushActive(m_brushActive);
 }
 
 bool ToolMain::UpdateInput(MSG * msg)
@@ -393,21 +389,23 @@ bool ToolMain::UpdateInput(MSG * msg)
             break;
 
         case WM_LBUTTONDOWN:
+            Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
+
             m_cursorPos.x = GET_X_LPARAM(msg->lParam);
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
-
-            m_toolInputCommands.leftMouseDown = true;
 
             m_beginDragPos = m_currentDragPos = { m_cursorPos.x, m_cursorPos.y };
             break;
 
         case WM_MOUSEMOVE:
         {
+            Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
+
             m_cursorPos.x = GET_X_LPARAM(msg->lParam);
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
 
-            m_toolInputCommands.leftMouseDown = (msg->wParam & MK_LBUTTON);
-            m_toolInputCommands.rightMouseDown = (msg->wParam & MK_RBUTTON);
+            //m_toolInputCommands.leftMouseDown = (msg->wParam & MK_LBUTTON);
+            //m_toolInputCommands.rightMouseDown = (msg->wParam & MK_RBUTTON);
 
             // if the left mouse button is down (dragging) and the mouse is free
             bool cursorNotCapturedAndBrushNotActive = (!m_cursorCaptured && !m_brushActive);
@@ -452,7 +450,7 @@ bool ToolMain::UpdateInput(MSG * msg)
 
         case WM_LBUTTONUP:
         {
-            m_toolInputCommands.leftMouseDown = false;
+            Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
 
             // Do box selection if the user has performed a drag action
             if (m_dragging)
@@ -532,18 +530,28 @@ bool ToolMain::UpdateInput(MSG * msg)
         }
         break;
         case WM_RBUTTONDOWN:
-            m_toolInputCommands.rightMouseDown = true;
+            Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
 
             // Capture/release the cursor when right mouse button is clicked/released
             if ((!m_cursorControlsCamera && !m_brushActive))
                 m_captureCursorThisFrame = true;
             break;
         case WM_RBUTTONUP:
-            m_toolInputCommands.rightMouseDown = false;
+            Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
 
             // Capture/release the cursor when right mouse button is clicked/released
             if ((!m_cursorControlsCamera && !m_brushActive))
                 m_captureCursorThisFrame = true;
+            break;
+        case WM_ACTIVATEAPP:
+        case WM_INPUT:
+        case WM_MBUTTONDOWN:
+        case WM_MBUTTONUP:
+        case WM_MOUSEWHEEL:
+        case WM_XBUTTONDOWN:
+        case WM_XBUTTONUP:
+        case WM_MOUSEHOVER:
+            Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
             break;
     }
     //here we update all the actual app functionality that we want.  This information will either be used int toolmain, or sent down to the renderer (Camera movement etc
