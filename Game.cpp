@@ -453,10 +453,9 @@ void Game::Render()
     
     // HUD
     m_sprites->Begin();
-    DirectX::SimpleMath::Vector3 camPosition = m_camera.GetPosition();
-    WCHAR   Buffer[256];
-    std::wstring var = L"Cam X: " + std::to_wstring(camPosition.x) + L" Cam Z: " + std::to_wstring(camPosition.z);
-    m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(100, 10), Colors::Yellow);
+    std::wstring var =  L"FPS: " + std::to_wstring(m_timer.GetFramesPerSecond()) +
+                        L"\nFrame time: " + std::to_wstring(m_timer.GetElapsedSeconds() * 1000) + L"ms";
+    m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(10, 10), Colors::Yellow);
     m_sprites->End();
 
 	m_deviceResources->Present();
