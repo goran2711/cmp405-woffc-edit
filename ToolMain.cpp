@@ -324,6 +324,12 @@ void ToolMain::Tick(MSG *msg)
 
         SetCursorPos(clientCenterScreen.x, clientCenterScreen.y);
     }
+            // TODO: Add terrain manipulation functionality
+            //       - How do I want to detect and handle mouse clicks?
+            //         - DirectX::Mouse object is inside Game, so I cannot query it in ToolMain--move it out?
+            //           - Try moving DirectXTK HDI classes to ToolMain and see how that is--may be able to get rid of
+            //             or simplify "InputCommands"
+            //           - Ask how Discord would do it
 
     // If the user is clicking and dragging (creating a selection box)
     if (m_dragging)

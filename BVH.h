@@ -79,28 +79,34 @@ class BVH
 public:
     BVH() = default;
 
-    // NOTE: with terrain, vertices will be a 2d array... sooo boo
-    template <size_t rows, size_t columns>
-    BVH(const VertexPositionNormalTexture (&vertices)[rows][columns])
+    template <size_t numVertices>
+    BVH(const VertexPositionNormalTexture(&vertices)[numVertices])
     {
         Initialise(vertices);
     }
 
-    template <size_t rows, size_t columns>
-    void Initialise(const VertexPositionNormalTexture (&vertices)[rows][columns])
+    template <size_t numVertices>
+    void Initialise(const VertexPositionNormalTexture (&vertices)[numVertices])
     {
+        // Assuming square terrain
+        const int dimensions = (int) std::sqrt(float(numVertices));
+        const int numQuads = numVertices - (dimensions * 2 - 1);
+        const int numTriangles = numQuads * 2;
+
         // Initialise primitive (triangle) array
-        m_primitives.reserve(((rows - 1) * (columns - 1)) * 2);
-        for (int z = 0; z < rows - 1; ++z)
+        m_primitives.reserve(numTriangles);
+        for (int z = 0; z < dimensions - 1; ++z)
         {
-            for (int x = 0; x < columns - 1; ++x)
+            for (int x = 0; x < dimensions - 1; ++x)
             {
+                const int index = (z * dimensions) + x;
+
                 // .position is just a public variable, and I don't expect terrainGeometry to move around in memory
                 // NOTE: Still bad tho, probably (definitely)
-                const XMFLOAT3& bottomLeft = vertices[z][x].position;
-                const XMFLOAT3& bottomRight = vertices[z][x + 1].position;
-                const XMFLOAT3& topRight = vertices[z + 1][x + 1].position;
-                const XMFLOAT3& topLeft = vertices[z + 1][x].position;
+                const XMFLOAT3& bottomLeft = vertices[index].position;
+                const XMFLOAT3& bottomRight = vertices[index + 1].position;
+                const XMFLOAT3& topRight = vertices[index + dimensions + 1].position;
+                const XMFLOAT3& topLeft = vertices[index + dimensions].position;
 
                 m_primitives.emplace_back(bottomLeft, bottomRight, topRight);
                 m_primitives.emplace_back(bottomLeft, topRight, topLeft);
