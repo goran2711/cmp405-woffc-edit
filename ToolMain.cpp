@@ -270,6 +270,9 @@ void ToolMain::Tick(MSG *msg)
 
     if (m_captureCursorThisFrame)
     {
+        // Hide brush decal (in case it was visible)
+        m_d3dRenderer.ShowBrushDecal(false);
+
         captureMouse(!m_cursorCaptured, (!m_cursorCaptured && m_captureCursorForCameraThisFrame));
         m_captureCursorThisFrame = false;
         m_captureCursorForCameraThisFrame = false;
@@ -324,9 +327,12 @@ void ToolMain::Tick(MSG *msg)
     else if (m_brushActive)
     {
         XMVECTOR wsCoord;
-        if (m_d3dRenderer.CursorIntersectsTerrain(m_cursorPos.x, m_cursorPos.y, wsCoord))
-        {
-        }
+        bool intersectsTerrain = m_d3dRenderer.CursorIntersectsTerrain(m_cursorPos.x, m_cursorPos.y, wsCoord);
+
+        if (intersectsTerrain)
+            m_d3dRenderer.SetBrushDecalPosition(wsCoord);
+
+        m_d3dRenderer.ShowBrushDecal(intersectsTerrain);
     }
 
     // If the user is clicking and dragging (creating a selection box)
