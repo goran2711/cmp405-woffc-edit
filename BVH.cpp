@@ -76,34 +76,14 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
 {
     assert(first < m_indices.size());
 
-    BoundingBox bounds;
-
     XMVECTOR min = MAX;
     XMVECTOR max = MIN;
 
-    // Initialise bounding box
-    {
-        const Triangle& triangle = m_primitives[m_indices[first]];
-
-        for (int j = 0; j < 3; ++j)
-        {
-            XMVECTOR vertex = XMLoadFloat3(triangle.v[j]);
-
-            min = XMVectorMin(min, vertex);
-            max = XMVectorMax(max, vertex);
-        }
-
-        BoundingBox::CreateFromPoints(bounds, min, max);
-    }
-
-    // Expand bounding box
-    for (int i = first + 1; i < first + count; ++i)
+    // Find the two corner vertices that make up the bounding box
+    for (int i = first; i < first + count; ++i)
     {
         const Triangle& triangle = m_primitives[m_indices[i]];
 
-        min = MAX;
-        max = MIN;
-
         for (int j = 0; j < 3; ++j)
         {
             XMVECTOR vertex = XMLoadFloat3(triangle.v[j]);
@@ -111,12 +91,10 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
             min = XMVectorMin(min, vertex);
             max = XMVectorMax(max, vertex);
         }
-
-        BoundingBox newBounds;
-        BoundingBox::CreateFromPoints(newBounds, min, max);
-
-        BoundingBox::CreateMerged(bounds, bounds, newBounds);
     }
+
+    BoundingBox bounds;
+    BoundingBox::CreateFromPoints(bounds, min, max);
 
     return bounds;
 }
