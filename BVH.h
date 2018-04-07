@@ -138,6 +138,8 @@ private:
 
     bool Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
 
+    void Refit(BVHNode& node);
+
     void XM_CALLCONV DebugRender(BVHNode& node, ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int currentDepth, int depth);
 
     // Node array

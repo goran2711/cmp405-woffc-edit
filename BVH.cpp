@@ -36,23 +36,7 @@ bool BVH::Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const
 
 void BVH::Refit()
 {
-    // A node's parent is always going to be to the left
-    for (int i = m_poolPtr - 1; i >= 0; --i)
-    {
-        BVHNode& node = m_pool[i];
-
-        if (node.count > 0)
-            // Recalculate leaf node bounds from the primitives within
-            node.bounds = CalculateBounds(node.leftFirst, node.count);
-        else
-        {
-            BVHNode& childL = m_pool[node.leftFirst + 0];
-            BVHNode& childR = m_pool[node.leftFirst + 1];
-
-            // Recalculate internal node bounds from its children
-            BoundingBox::CreateMerged(node.bounds, childL.bounds, childR.bounds);
-        }
-    }
+    Refit(*m_root);
 }
 
 void BVH::InitialiseDebugVisualiastion(ID3D11DeviceContext* context)
@@ -264,6 +248,24 @@ bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) con
     }
 
     return (dist < std::numeric_limits<float>::max());
+}
+
+void BVH::Refit(BVHNode& node)
+{
+    if (node.count > 0)
+        // Update leaf node bounding box (to fit primitives)
+        node.bounds = CalculateBounds(node.leftFirst, node.count);
+    else
+    {
+        BVHNode& childL = m_pool[node.leftFirst + 0];
+        BVHNode& childR = m_pool[node.leftFirst + 1];
+
+        Refit(childL);
+        Refit(childR);
+
+        // Update internal node bounding box (to fit children)
+        BoundingBox::CreateMerged(node.bounds, childL.bounds, childR.bounds);
+    }
 }
 
 void XM_CALLCONV BVH::DebugRender(BVHNode& node, ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int currentDepth, int depth)
