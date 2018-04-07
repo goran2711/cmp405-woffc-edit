@@ -998,6 +998,12 @@ void XM_CALLCONV Game::ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevat
 {
     // If the player is trying to manipulate the terrain at this location
     m_displayChunk.ManipulateTerrain(wsCoord, brushSize, elevate);
+    RefitTerrainBVH();
+}
+
+void Game::RefitTerrainBVH()
+{
+    m_displayChunk.RefitBVH();
 }
 
 #ifdef DXTK_AUDIO

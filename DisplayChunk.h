@@ -24,6 +24,8 @@ public:
 
     void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR pos, int brushSize, bool elevate);
 
+    void RefitBVH();
+
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionNormalTexture>>  m_batch;
 	std::unique_ptr<DirectX::BasicEffect>       m_terrainEffect;
 

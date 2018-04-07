@@ -330,10 +330,18 @@ void ToolMain::Tick(MSG *msg)
         bool intersectsTerrain = m_d3dRenderer.CursorIntersectsTerrain(m_cursorPos.x, m_cursorPos.y, wsCoord);
 
         if (intersectsTerrain)
+        {
             m_d3dRenderer.SetBrushDecalPosition(wsCoord);
+
+            if (m_leftMouseBtnDown /* || m_rightMouseBtnDown */)
+                m_d3dRenderer.ManipulateTerrain(wsCoord, m_leftMouseBtnDown);
+        }
 
         m_d3dRenderer.ShowBrushDecal(intersectsTerrain);
     }
+
+    //if (m_leftMouseBtnReleased)
+    //    m_d3dRenderer.RefitTerrainBVH();
 
     // If the user is clicking and dragging (creating a selection box)
     if (m_dragging)
@@ -354,6 +362,7 @@ void ToolMain::Tick(MSG *msg)
 
     // "Reset" input commands
     m_toolInputCommands.mouseDX = m_toolInputCommands.mouseDY = 0;
+    m_leftMouseBtnReleased = false;
 }
 
 SceneObject * ToolMain::GetObjectFromID(int id)
@@ -399,6 +408,8 @@ bool ToolMain::UpdateInput(MSG * msg)
 
             m_cursorPos.x = GET_X_LPARAM(msg->lParam);
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
+
+            m_leftMouseBtnDown = true;
 
             m_beginDragPos = m_currentDragPos = { m_cursorPos.x, m_cursorPos.y };
             break;
@@ -457,6 +468,9 @@ bool ToolMain::UpdateInput(MSG * msg)
         case WM_LBUTTONUP:
         {
             Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
+
+            m_leftMouseBtnDown = false;
+            m_leftMouseBtnReleased = true;
 
             // Do box selection if the user has performed a drag action
             if (m_dragging)

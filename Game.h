@@ -91,6 +91,8 @@ public:
     void XM_CALLCONV SetBrushDecalPosition(DirectX::FXMVECTOR wsCoord, float brushSize = BRUSH_DECAL_DIMENSIONS);
     void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize = BRUSH_DECAL_DIMENSIONS);
 
+    void RefitTerrainBVH();
+
 #ifdef DXTK_AUDIO
 	void NewAudioDevice();
 #endif
