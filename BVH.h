@@ -136,7 +136,7 @@ private:
     using ChildCounts = std::tuple<uint32_t, uint32_t>;
     ChildCounts XM_CALLCONV Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<Triangle>& sortedPrimitives);
 
-    bool Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
+    bool Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
 
     void Refit(BVHNode& node);
 
@@ -146,8 +146,7 @@ private:
     BVHNode* m_root = nullptr;
     // NOTE: Node pool contains more nodes than are used--perhaps dynamically create new as it is being built?
     //       - Would necessitate changing BVHNode& parameters to indices instead, since references would be invalidated
-    // TODO: Figure out why I cannot access vector elements when function is marked const (don't stick with mutable)
-    mutable std::vector<BVHNode> m_pool;
+    std::vector<BVHNode> m_pool;
     size_t m_poolPtr = 1;
     
     std::vector<Triangle> m_primitives;

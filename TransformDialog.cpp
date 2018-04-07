@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "SceneObject.h"
 #include <vector>
+#include <cassert>
 
 // Generates the C++ code necessary for a dynamic CObject-derived
 // class with run-time access to the class name and position within the hierarchy

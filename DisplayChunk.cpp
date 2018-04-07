@@ -159,9 +159,9 @@ void DisplayChunk::SaveHeightMap()
     FILE *pFile = NULL;
 
     // Open The File In Read / Binary Mode.
-    pFile = fopen(m_heightmap_path.c_str(), "wb+");;
+    errno_t ret = fopen_s(&pFile, m_heightmap_path.c_str(), "wb+");;
     // Check To See If We Found The File And Could Open It
-    if (pFile == NULL)
+    if (!ret || pFile == NULL)
     {
         // Display Error Message And Stop The Function
         MessageBox(NULL, L"Can't Find The Height Map!", L"Error", MB_OK);
@@ -192,7 +192,7 @@ void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSi
     // TODO: Some check to ensure it is within bounds (well.. cursor-terrain test will never be true outside the terrain, sooo...)
 
     // Controls the speed at which vertices are displaced
-    static const float MAGNITUDE = 3.f;
+    static const float MAGNITUDE = 1.f;
     
     // Transform to grid coordinates
     int hitX = (XMVectorGetX(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;

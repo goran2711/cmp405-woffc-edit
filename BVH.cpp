@@ -178,7 +178,7 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
     return std::make_tuple(countLeft, countRight);
 }
 
-bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) const
+bool BVH::Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dist) const
 {
     float tempDist;
     if (!ray.Intersects(node.bounds, tempDist))
