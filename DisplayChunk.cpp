@@ -40,7 +40,7 @@ void XM_CALLCONV DisplayChunk::RenderBatch(ID3D11DeviceContext* context, FXMMATR
     m_batch->DrawIndexed(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_indices.data(), m_indices.size(), m_terrainGeometry, NUM_VERTICES);
     m_batch->End();
 
-    //m_bvh.DebugRender(context, view, projection, 4);
+    //m_bvh.DebugRender(context, view, projection, 3);
 }
 
 void DisplayChunk::InitialiseBatch()

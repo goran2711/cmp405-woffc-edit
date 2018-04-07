@@ -50,12 +50,6 @@ void XM_CALLCONV BVH::DebugRender(ID3D11DeviceContext* context, FXMMATRIX view, 
     DebugRender(*m_root, context, view, projection, 0, depth);
 }
 
-void BVH::InitialiseIndexArray(size_t size)
-{
-    m_indices.resize(size);
-    std::iota(m_indices.begin(), m_indices.end(), 0);
-}
-
 void BVH::InitialiseNodes(size_t size)
 {
     // Initialise node pool and root
@@ -74,15 +68,13 @@ void BVH::InitialiseNodes(size_t size)
 
 BoundingBox BVH::CalculateBounds(int first, int count) const
 {
-    assert(first < m_indices.size());
-
     XMVECTOR min = MAX;
     XMVECTOR max = MIN;
 
     // Find the two corner vertices that make up the bounding box
     for (int i = first; i < first + count; ++i)
     {
-        const Triangle& triangle = m_primitives[m_indices[i]];
+        const Triangle& triangle = m_primitives[i];
 
         for (int j = 0; j < 3; ++j)
         {
@@ -135,10 +127,10 @@ void BVH::Partition(BVHNode& node)
     uint8_t splitAxis = (extentX > extentY && extentX > extentZ ? 0 : (extentY > extentZ ? 1 : 2));
 
     // NOTE: Wasteful on memory
-    std::vector<int> sortedIndices(m_indices.size());
-    ChildCounts childCounts = Split(first, last, splitPos, splitAxis, sortedIndices);
+    std::vector<Triangle> sortedPrimitives(node.count);
+    ChildCounts childCounts = Split(first, last, splitPos, splitAxis, sortedPrimitives);
 
-    std::copy(sortedIndices.cbegin() + first, sortedIndices.cbegin() + last, m_indices.begin() + first);
+    std::copy(sortedPrimitives.cbegin(), sortedPrimitives.cend(), m_primitives.begin() + first);
 
     // Make parent internal node
     node.leftFirst = m_poolPtr;
@@ -156,7 +148,7 @@ void BVH::Partition(BVHNode& node)
     childR.bounds = CalculateBounds(childR.leftFirst, childR.count);
 }
 
-auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<int>& sortedIndices) -> ChildCounts
+auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<Triangle>& sortedPrimitives) -> ChildCounts
 {
     assert(first < m_primitives.size());
 
@@ -165,9 +157,9 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
     uint32_t countRight = 0;
 
     // Compare the centre of the triangles to the splitPos
-    for (int i = first; i < last; ++i)
+    for (int i = 0; i < last - first; ++i)
     {
-        const Triangle& triangle = m_primitives[m_indices[i]];
+        const Triangle& triangle = m_primitives[first + i];
 
         // Calculate triangle center
         XMVECTOR center = XMVectorZero();
@@ -178,9 +170,9 @@ auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, u
         // If triangle is on the left of the split position, it should be added to the left child--
         // meaning m_indices[i] should be moved to the countLeft side of the array
         if (center.m128_f32[splitAxis] < splitPos.m128_f32[splitAxis])
-            sortedIndices[first + countLeft++] = m_indices[i];
+            sortedPrimitives[countLeft++] = triangle;
         else
-            sortedIndices[last - 1 - countRight++] = m_indices[i];
+            sortedPrimitives[(last - first) - 1 - countRight++] = triangle;
     }
 
     return std::make_tuple(countLeft, countRight);
@@ -199,7 +191,7 @@ bool BVH::Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) con
         // Check for intersection with triangles
         for (int i = 0; i < node.count; ++i)
         {
-            const Triangle& triangle = m_primitives[m_indices[node.leftFirst + i]];
+            const Triangle& triangle = m_primitives[node.leftFirst + i];
 
             if (ray.Intersects(*triangle.v[0], *triangle.v[1], *triangle.v[2], tempDist))
             {

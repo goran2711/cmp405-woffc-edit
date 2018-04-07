@@ -52,6 +52,8 @@ class BVH
     // My "primitive" equivalent
     struct Triangle
     {
+        Triangle() = default;
+
         // - Stores three pointers to vertices/vertex positions
         //   - Means I don't have to do any extra stuff (like updating BVHs vertex positions)
         //     when refitting the structure--just recalculate the internal node's AABBs
@@ -113,7 +115,6 @@ public:
             }
         }
 
-        InitialiseIndexArray(m_primitives.size());
         InitialiseNodes(m_primitives.size());
     }
 
@@ -125,7 +126,6 @@ public:
     void XM_CALLCONV DebugRender(ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int depth);
 
 private:
-    void InitialiseIndexArray(size_t size);
     void InitialiseNodes(size_t size);
 
     BoundingBox CalculateBounds(int first, int count) const;
@@ -134,7 +134,7 @@ private:
     void Partition(BVHNode& node);
 
     using ChildCounts = std::tuple<uint32_t, uint32_t>;
-    ChildCounts XM_CALLCONV Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<int>& sortedIndices);
+    ChildCounts XM_CALLCONV Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<Triangle>& sortedPrimitives);
 
     bool Intersects(BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
 
@@ -151,7 +151,6 @@ private:
     size_t m_poolPtr = 1;
     
     std::vector<Triangle> m_primitives;
-    std::vector<int> m_indices;
 
     // Debug visualisation stuff
     std::unique_ptr<GeometricPrimitive> m_box;
