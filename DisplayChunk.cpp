@@ -192,7 +192,7 @@ void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSi
     // TODO: Some check to ensure it is within bounds (well.. cursor-terrain test will never be true outside the terrain, sooo...)
 
     // Controls the speed at which vertices are displaced
-    static const float MAGNITUDE = 1.f;
+    static const float MAGNITUDE = 1.5f;
     
     // Transform to grid coordinates
     int hitX = (XMVectorGetX(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;

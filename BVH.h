@@ -133,9 +133,6 @@ private:
     void Subdivide(BVHNode& node, int depth = 0);
     void Partition(BVHNode& node);
 
-    using ChildCounts = std::tuple<uint32_t, uint32_t>;
-    ChildCounts XM_CALLCONV Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<Triangle>& sortedPrimitives);
-
     bool Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
 
     void Refit(BVHNode& node);

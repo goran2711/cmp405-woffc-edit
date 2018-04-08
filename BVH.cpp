@@ -111,26 +111,33 @@ void BVH::Subdivide(BVHNode& node, int depth)
 
 void BVH::Partition(BVHNode& node)
 {
-    // Store for later
+    // Store for convenience
     const uint32_t first = node.leftFirst;
     const uint32_t last = first + node.count;
 
-    //// Split and sort primitives
+    //// Partition primitives according to some heuristic
     // Determine where to split
     XMVECTOR splitPos = XMLoadFloat3(&node.bounds.Center);
 
-    // Just split 50/50 along the largest axis
-    // NOTE: Gross..
+    // In this case heuristic just splits 50/50 along the largest axis
+    // NOTE: This could probably be done much better
     float extentX = node.bounds.Extents.x;
     float extentY = node.bounds.Extents.y;
     float extentZ = node.bounds.Extents.z;
     uint8_t splitAxis = (extentX > extentY && extentX > extentZ ? 0 : (extentY > extentZ ? 1 : 2));
 
-    // NOTE: Wasteful on memory
-    std::vector<Triangle> sortedPrimitives(node.count);
-    ChildCounts childCounts = Split(first, last, splitPos, splitAxis, sortedPrimitives);
-
-    std::copy(sortedPrimitives.cbegin(), sortedPrimitives.cend(), m_primitives.begin() + first);
+    // Perform the partition
+    auto pivot = std::partition(m_primitives.begin() + first, m_primitives.begin() + last,
+    [&](const Triangle& triangle) {
+        // Calculate triangle center
+        XMVECTOR center = XMVectorZero();
+        for (int j = 0; j < 3; ++j)
+            center += XMLoadFloat3(triangle.v[j]);
+        center /= 3;
+        
+        // If triangle is on the left of the split position, is belongs to the left child, otherwise it belongs to the right child
+        return center.m128_f32[splitAxis] < splitPos.m128_f32[splitAxis];
+    });
 
     // Make parent internal node
     node.leftFirst = m_poolPtr;
@@ -139,43 +146,13 @@ void BVH::Partition(BVHNode& node)
     // Create children
     BVHNode& childL = m_pool[m_poolPtr++];
     childL.leftFirst = first;
-    childL.count = std::get<0>(childCounts);
+    childL.count = std::distance(m_primitives.begin() + first, pivot);
     childL.bounds = CalculateBounds(childL.leftFirst, childL.count);
 
     BVHNode& childR = m_pool[m_poolPtr++];
     childR.leftFirst = first + childL.count;
-    childR.count = std::get<1>(childCounts);
+    childR.count = std::distance(pivot, m_primitives.begin() + last);
     childR.bounds = CalculateBounds(childR.leftFirst, childR.count);
-}
-
-auto XM_CALLCONV BVH::Split(uint32_t first, uint32_t last, FXMVECTOR splitPos, uint8_t splitAxis, std::vector<Triangle>& sortedPrimitives) -> ChildCounts
-{
-    assert(first < m_primitives.size());
-
-    // Splits and sorts the index array
-    uint32_t countLeft = 0;
-    uint32_t countRight = 0;
-
-    // Compare the centre of the triangles to the splitPos
-    for (int i = 0; i < last - first; ++i)
-    {
-        const Triangle& triangle = m_primitives[first + i];
-
-        // Calculate triangle center
-        XMVECTOR center = XMVectorZero();
-        for (int j = 0; j < 3; ++j)
-            center += XMLoadFloat3(triangle.v[j]);
-        center /= 3;
-
-        // If triangle is on the left of the split position, it should be added to the left child--
-        // meaning m_indices[i] should be moved to the countLeft side of the array
-        if (center.m128_f32[splitAxis] < splitPos.m128_f32[splitAxis])
-            sortedPrimitives[countLeft++] = triangle;
-        else
-            sortedPrimitives[(last - first) - 1 - countRight++] = triangle;
-    }
-
-    return std::make_tuple(countLeft, countRight);
 }
 
 bool BVH::Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dist) const
