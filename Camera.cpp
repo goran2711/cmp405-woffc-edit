@@ -1,6 +1,9 @@
 #include "Camera.h"
 #include "InputCommands.h"
 
+using namespace DirectX;
+using namespace DirectX::SimpleMath;
+
 namespace
 {
 	template<typename T>
@@ -12,8 +15,6 @@ namespace
 
 void Camera::Update(const InputCommands & inputCommands)
 {
-	using namespace DirectX::SimpleMath;
-
 	if (inputCommands.rotRight)
 	{
 		m_rotation.y -= m_rotSpeed;
@@ -25,15 +26,14 @@ void Camera::Update(const InputCommands & inputCommands)
 
 	m_rotation.y += inputCommands.mouseDX;
 	m_rotation.x += inputCommands.mouseDY;
-	m_rotation.x = clamp(m_rotation.x, -90.f, 90.f);
+	m_rotation.x = clamp(m_rotation.x, -89.f, 89.f);
 
 	//create look direction from Euler angles in m_camOrientation	
-	constexpr float DEG_TO_RAD = (3.1415f / 180.f);
-	float cosY = cosf(m_rotation.y * DEG_TO_RAD);
-	float cosP = cosf(m_rotation.x * DEG_TO_RAD);
+	float cosY = cosf(XMConvertToRadians(m_rotation.y));
+	float cosP = cosf(XMConvertToRadians(m_rotation.x));
 
-	float sinY = sinf(m_rotation.y * DEG_TO_RAD);
-	float sinP = sinf(m_rotation.x * DEG_TO_RAD);
+	float sinY = sinf(XMConvertToRadians(m_rotation.y));
+	float sinP = sinf(XMConvertToRadians(m_rotation.x));
 
 	m_forward.x = sinY * cosP;
 	m_forward.y = sinP;
@@ -74,6 +74,5 @@ DirectX::SimpleMath::Vector3 Camera::GetPosition() const
 
 DirectX::SimpleMath::Matrix Camera::GetViewMatrix() const
 {
-	using namespace DirectX::SimpleMath;
 	return Matrix::CreateLookAt(m_position, m_lookAt, Vector3::UnitY);
 }
