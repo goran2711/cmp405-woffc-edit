@@ -340,9 +340,6 @@ void ToolMain::Tick(MSG *msg)
         m_d3dRenderer.ShowBrushDecal(intersectsTerrain);
     }
 
-    //if (m_leftMouseBtnReleased)
-    //    m_d3dRenderer.RefitTerrainBVH();
-
     // If the user is clicking and dragging (creating a selection box)
     if (m_dragging)
     {
@@ -362,7 +359,6 @@ void ToolMain::Tick(MSG *msg)
 
     // "Reset" input commands
     m_toolInputCommands.mouseDX = m_toolInputCommands.mouseDY = 0;
-    m_leftMouseBtnReleased = false;
 }
 
 SceneObject * ToolMain::GetObjectFromID(int id)
@@ -470,7 +466,6 @@ bool ToolMain::UpdateInput(MSG * msg)
             Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
 
             m_leftMouseBtnDown = false;
-            m_leftMouseBtnReleased = true;
 
             // Do box selection if the user has performed a drag action
             if (m_dragging)

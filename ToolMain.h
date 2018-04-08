@@ -97,7 +97,6 @@ private:	//variables
     bool m_cursorControlsCamera = false;
 
     bool m_leftMouseBtnDown = false;
-    bool m_leftMouseBtnReleased = false;
 
     enum MoveAxis
     {
