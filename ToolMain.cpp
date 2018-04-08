@@ -333,7 +333,7 @@ void ToolMain::Tick(MSG *msg)
         {
             m_d3dRenderer.SetBrushDecalPosition(wsCoord);
 
-            if (m_leftMouseBtnDown /* || m_rightMouseBtnDown */)
+            if (m_leftMouseBtnDown ^ m_rightMouseBtnDown)
                 m_d3dRenderer.ManipulateTerrain(wsCoord, m_leftMouseBtnDown);
         }
 
@@ -547,12 +547,16 @@ bool ToolMain::UpdateInput(MSG * msg)
         case WM_RBUTTONDOWN:
             Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
 
+            m_rightMouseBtnDown = true;
+
             // Capture/release the cursor when right mouse button is clicked/released
             if ((!m_cursorControlsCamera && !m_brushActive))
                 m_captureCursorThisFrame = true;
             break;
         case WM_RBUTTONUP:
             Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
+
+            m_rightMouseBtnDown = false;
 
             // Capture/release the cursor when right mouse button is clicked/released
             if ((!m_cursorControlsCamera && !m_brushActive))
