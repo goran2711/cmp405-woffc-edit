@@ -331,10 +331,10 @@ void ToolMain::Tick(MSG *msg)
 
         if (intersectsTerrain)
         {
-            m_d3dRenderer.SetBrushDecalPosition(wsCoord);
+            m_d3dRenderer.SetBrushDecalPosition(wsCoord, m_brushSize);
 
             if (m_leftMouseBtnDown ^ m_rightMouseBtnDown)
-                m_d3dRenderer.ManipulateTerrain(wsCoord, m_leftMouseBtnDown);
+                m_d3dRenderer.ManipulateTerrain(wsCoord, m_leftMouseBtnDown, m_brushSize, m_brushForce);
         }
 
         m_d3dRenderer.ShowBrushDecal(intersectsTerrain);

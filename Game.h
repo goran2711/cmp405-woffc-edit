@@ -36,9 +36,6 @@ class Game : public DX::IDeviceNotify
         STENCIL_OBJECT          = (1 << 2)
     };
 
-    // Perhaps this should be variable (proportional to brush width, for instance)
-    constexpr static float BRUSH_DECAL_DIMENSIONS       = 30.f;
-
 public:
 	enum PickingMode
 	{
@@ -88,8 +85,8 @@ public:
 
     bool CursorIntersectsTerrain(long cursorX, long cursorY, DirectX::XMVECTOR& wsCoord);
     void ShowBrushDecal(bool val = true);
-    void XM_CALLCONV SetBrushDecalPosition(DirectX::FXMVECTOR wsCoord, float brushSize = BRUSH_DECAL_DIMENSIONS);
-    void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize = BRUSH_DECAL_DIMENSIONS);
+    void XM_CALLCONV SetBrushDecalPosition(DirectX::FXMVECTOR wsCoord, float brushSize);
+    void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize, float brushForce);
 
     void RefitTerrainBVH();
 

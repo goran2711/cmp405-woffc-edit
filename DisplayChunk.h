@@ -22,7 +22,7 @@ public:
 	void UpdateTerrain();			//updates the geometry based on the heigtmap
 	void GenerateHeightmap();		//creates or alters the heightmap
 
-    void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR pos, int brushSize, bool elevate);
+    void XM_CALLCONV ManipulateTerrain(DirectX::FXMVECTOR clickPos, bool elevate, int brushSize, float brushForce);
 
     void RefitBVH();
 

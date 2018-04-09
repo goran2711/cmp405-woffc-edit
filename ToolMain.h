@@ -113,4 +113,6 @@ private:	//variables
 	POINT m_currentDragPos;
 
     bool m_brushActive = false;
+    float m_brushSize = 32.f;
+    float m_brushForce = 1.25f;
 };

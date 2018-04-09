@@ -156,21 +156,23 @@ void DisplayChunk::LoadHeightMap(ID3D11Device* device)
 
 void DisplayChunk::SaveHeightMap()
 {
+    for (int i = 0; i < NUM_VERTICES; ++i)
+        m_heightMap[i] = m_terrainGeometry[i].position.y / m_terrainHeightScale;
+
     FILE *pFile = NULL;
 
     // Open The File In Read / Binary Mode.
-    errno_t ret = fopen_s(&pFile, m_heightmap_path.c_str(), "wb+");;
+    errno_t ret = fopen_s(&pFile, m_heightmap_path.c_str(), "wb+");
     // Check To See If We Found The File And Could Open It
-    if (!ret || pFile == NULL)
+    if (ret != 0 || pFile == NULL)
     {
         // Display Error Message And Stop The Function
         MessageBox(NULL, L"Can't Find The Height Map!", L"Error", MB_OK);
         return;
     }
 
-    fwrite(m_heightMap, sizeof(BYTE), NUM_VERTICES, pFile);
+    size_t written = fwrite(m_heightMap, sizeof(BYTE), NUM_VERTICES, pFile);
     fclose(pFile);
-
 }
 
 void DisplayChunk::UpdateTerrain()
@@ -187,11 +189,8 @@ void DisplayChunk::GenerateHeightmap()
     //insert how YOU want to update the heigtmap here! :D
 }
 
-void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSize, bool elevate)
-{
-    // Controls the speed at which vertices are displaced
-    static constexpr float MAGNITUDE = 1.25f;
-    
+void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, bool elevate, int brushSize, float brushForce)
+{    
     // Transform to grid (nearest) coordinates
     int hitX = (XMVectorGetX(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
     int hitZ = (XMVectorGetZ(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
@@ -220,7 +219,7 @@ void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSi
             float distance = XMVectorGetX(XMVector3LengthEst(position - hitPosition));
             float weight = 1.f - (distance / brushRadius);
             
-            float displacement = weight * MAGNITUDE;
+            float displacement = weight * brushForce;
             
             // Change and clamp vertex y-coordinate
             float newHeight = 0.f;

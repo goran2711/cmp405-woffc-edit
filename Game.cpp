@@ -994,10 +994,10 @@ void XM_CALLCONV Game::SetBrushDecalPosition(FXMVECTOR wsCoord, float brushSize)
     XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
 }
 
-void XM_CALLCONV Game::ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize)
+void XM_CALLCONV Game::ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize, float brushForce)
 {
     // If the player is trying to manipulate the terrain at this location
-    m_displayChunk.ManipulateTerrain(wsCoord, brushSize, elevate);
+    m_displayChunk.ManipulateTerrain(wsCoord, elevate, int(brushSize), brushForce);
     RefitTerrainBVH();
 }
 
