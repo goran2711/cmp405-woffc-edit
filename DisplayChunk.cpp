@@ -189,60 +189,48 @@ void DisplayChunk::GenerateHeightmap()
 
 void XM_CALLCONV DisplayChunk::ManipulateTerrain(FXMVECTOR clickPos, int brushSize, bool elevate)
 {
-    // TODO: Some check to ensure it is within bounds (well.. cursor-terrain test will never be true outside the terrain, sooo...)
-
     // Controls the speed at which vertices are displaced
-    static const float MAGNITUDE = 1.5f;
+    static constexpr float MAGNITUDE = 1.25f;
     
-    // Transform to grid coordinates
+    // Transform to grid (nearest) coordinates
     int hitX = (XMVectorGetX(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
     int hitZ = (XMVectorGetZ(clickPos) + (0.5f * m_terrainSize)) / m_terrainPositionScalingFactor;
 
-    const int brushSizeH = (brushSize / 2) / m_terrainPositionScalingFactor;
+    const int brushRadius = brushSize / 2;
+    const int brushRadiusGrid = brushRadius / m_terrainPositionScalingFactor;
 
-    // FIX: Not sure why I have to add these -1 and +2 offsets here to get a satisfying result... (and even then it's not perfect)
-    int minX = std::max(0, hitX - brushSizeH - 1);
-    int minZ = std::max(0, hitZ - brushSizeH - 1);
-
-    int maxX = std::min(TERRAINRESOLUTION - 1, hitX + brushSizeH + 2);
-    int maxZ = std::min(TERRAINRESOLUTION - 1, hitZ + brushSizeH + 2);
-
-    XMVECTOR pos = clickPos;
-    pos = XMVectorSetY(pos, 0.f);
-
-    // Distance from what we will use as the center vertex, to the clicked position
-    int hitIdx = (hitZ * TERRAINRESOLUTION) + hitX;
-    Vector3 nearestPos = m_terrainGeometry[hitIdx].position;
-    nearestPos.y = 0.f;
-
-    float centerDistance = Vector3::Distance(nearestPos, pos);
-
-    // Move vertices
-    for (int z = minZ; z < maxZ; ++z)
+    // Hit position on the xz-plane
+    XMVECTOR hitPosition = XMVectorSetY(clickPos, 0.f);
+    for (int z = std::max(0, hitZ - brushRadiusGrid); z < std::min(TERRAINRESOLUTION, hitZ + brushRadiusGrid); ++z)
     {
-        for (int x = minX; x < maxX; ++x)
+        for (int x = std::max(0, hitX - brushRadiusGrid); x < std::min(TERRAINRESOLUTION, hitX + brushRadiusGrid); ++x)
         {
-            const int index = (z * TERRAINRESOLUTION) + x;
-            const float currentHeight = m_terrainGeometry[index].position.y;
+            // Only manipulate vertices that are within the brush radius
+            int gridDistance = (int)std::sqrt(std::pow(x - hitX, 2) + std::pow(z - hitZ, 2));
+            if (gridDistance >= brushRadiusGrid)
+                continue;
 
-            // Calculate the weight of the displacement for the current vertex based on its distance from the point the user clicked
-            // FIX: Need a better way to calculate weight--right now, this method acts weird without the std::min, and std::min is just a band-aid,
-            //      it's still not perfect
-            //      - Could the problem be that I'm selecting the nearest vertex in grid space? Grid space distance ignores height
-            Vector3 p = m_terrainGeometry[index].position;
-            p.y = 0.f;
-
-            float weight = std::min(1.f, centerDistance / Vector3::Distance(p, pos));
-
+            const int idx = x + (z * TERRAINRESOLUTION);
+            
+            XMVECTOR position = XMLoadFloat3(&m_terrainGeometry[idx].position);
+            // Make sure length is only calculated on the xz-plane
+            position = XMVectorSetY(position, 0.f);
+            
+            // Calculate weight based on vertex' distance from click position
+            float distance = XMVectorGetX(XMVector3LengthEst(position - hitPosition));
+            float weight = 1.f - (distance / brushRadius);
+            
             float displacement = weight * MAGNITUDE;
-
+            
+            // Change and clamp vertex y-coordinate
             float newHeight = 0.f;
+            float currentHeight = m_terrainGeometry[idx].position.y;
             if (elevate)
                 newHeight = std::min(currentHeight + displacement, 255.f * m_terrainHeightScale);
             else
                 newHeight = std::max(currentHeight - displacement, 0.f);
-
-            m_terrainGeometry[index].position.y = newHeight;
+            
+            m_terrainGeometry[idx].position.y = newHeight;
         }
     }
 
