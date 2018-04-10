@@ -566,11 +566,16 @@ bool ToolMain::UpdateInput(MSG * msg)
 		{
 			Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
 
+			const auto clamp = [](float val, float min, float max)
+			{
+				return (val < min ? min : val > max ? max : val);
+			};
+
 			if (m_brushActive)
 			{
 				short zDelta = GET_WHEEL_DELTA_WPARAM(msg->wParam);
 
-				m_brushSize += zDelta / 100.f;
+				m_brushSize = clamp(m_brushSize + (zDelta / 100.f), 10.f, 127.f);
 			}
 		}
 			break;
