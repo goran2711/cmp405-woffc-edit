@@ -398,6 +398,13 @@ void ToolMain::ToggleBrush()
 {
     m_brushActive = !m_brushActive;
 
+    // Perform the cursor-terrain intersection test immediately when the brush is activated
+    // (otherwise it will be rendered at the last calculated position because it's normally only recalculated when the cursor moves)
+    if (m_brushActive)
+        m_updateTerrainManipPosition = true;
+
+    m_d3dRenderer.ShowBrushDecal(m_brushActive);
+
     // Clear selections as well
     m_selectedObjects.clear();
 }
