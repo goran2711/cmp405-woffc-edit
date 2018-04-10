@@ -327,16 +327,32 @@ void ToolMain::Tick(MSG *msg)
     else if (m_brushActive)
     {
         XMVECTOR wsCoord;
-        bool intersectsTerrain = m_d3dRenderer.CursorIntersectsTerrain(m_cursorPos.x, m_cursorPos.y, wsCoord);
+
+        bool intersectsTerrain = true;
+        if (m_updateTerrainManipPosition)
+        {
+            intersectsTerrain = m_d3dRenderer.CursorIntersectsTerrain(m_cursorPos.x, m_cursorPos.y, wsCoord);
+
+            // Only update the stored position if intersection test passed
+            if (intersectsTerrain)
+                XMStoreFloat3(&m_terrainManipPosition, wsCoord);
+        }
+        else
+            wsCoord = XMLoadFloat3(&m_terrainManipPosition);
+
+        m_updateTerrainManipPosition = false;
 
         if (intersectsTerrain)
         {
+            // Move the brush indicator decal to the intersection point as a visual indication
             m_d3dRenderer.SetBrushDecalPosition(wsCoord, m_brushSize);
 
+            // Manipulate the terrain under the cursor if either mouse button is currently down
             if (m_leftMouseBtnDown ^ m_rightMouseBtnDown)
                 m_d3dRenderer.ManipulateTerrain(wsCoord, m_leftMouseBtnDown, m_brushSize, m_brushForce);
         }
 
+        // Hide/show the brush decal depending on whether or not the intersection test passed
         m_d3dRenderer.ShowBrushDecal(intersectsTerrain);
     }
 
@@ -417,8 +433,9 @@ bool ToolMain::UpdateInput(MSG * msg)
             m_cursorPos.x = GET_X_LPARAM(msg->lParam);
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
 
-            //m_toolInputCommands.leftMouseDown = (msg->wParam & MK_LBUTTON);
-            //m_toolInputCommands.rightMouseDown = (msg->wParam & MK_RBUTTON);
+            // Whenever the cursor moves, terrain-cursor intersection must be done again
+            if (m_brushActive)
+                m_updateTerrainManipPosition = true;
 
             // if the left mouse button is down (dragging) and the mouse is free
             bool cursorNotCapturedAndBrushNotActive = (!m_cursorCaptured && !m_brushActive);
@@ -445,6 +462,7 @@ bool ToolMain::UpdateInput(MSG * msg)
                 bool isAltDown = GetAsyncKeyState(VK_MENU);
                 bool isShiftDown = (msg->wParam & MK_SHIFT);
 
+                // Determine which axis to move the selected object(s) along according to the modifier keys currently held down
                 if (isCtrlDown)
                     m_moveAxis = MoveAxis::AXIS_X;
                 else if (isAltDown)

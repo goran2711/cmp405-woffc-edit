@@ -115,4 +115,7 @@ private:	//variables
     bool m_brushActive = false;
     float m_brushSize = 32.f;
     float m_brushForce = 1.25f;
+
+    DirectX::XMFLOAT3 m_terrainManipPosition;
+    bool m_updateTerrainManipPosition = false;
 };
