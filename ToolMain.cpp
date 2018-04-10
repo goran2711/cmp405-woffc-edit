@@ -562,16 +562,27 @@ bool ToolMain::UpdateInput(MSG * msg)
             if ((!m_cursorControlsCamera && !m_brushActive))
                 m_captureCursorThisFrame = true;
             break;
+        case WM_MOUSEWHEEL:
+		{
+			Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
+
+			if (m_brushActive)
+			{
+				short zDelta = GET_WHEEL_DELTA_WPARAM(msg->wParam);
+
+				m_brushSize += zDelta / 100.f;
+			}
+		}
+			break;
         case WM_ACTIVATEAPP:
-        case WM_INPUT:
+		case WM_INPUT:
         case WM_MBUTTONDOWN:
         case WM_MBUTTONUP:
-        case WM_MOUSEWHEEL:
         case WM_XBUTTONDOWN:
         case WM_XBUTTONUP:
         case WM_MOUSEHOVER:
-            Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
-            break;
+			Mouse::ProcessMessage(msg->message, msg->wParam, msg->lParam);
+			break;
     }
     //here we update all the actual app functionality that we want.  This information will either be used int toolmain, or sent down to the renderer (Camera movement etc
 
