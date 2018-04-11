@@ -173,6 +173,8 @@ void DisplayChunk::SaveHeightMap()
 
     size_t written = fwrite(m_heightMap, sizeof(BYTE), NUM_VERTICES, pFile);
     fclose(pFile);
+
+    MessageBox(NULL, L"Terrain has been saved successfully", L"OK", MB_OK);
 }
 
 void DisplayChunk::UpdateTerrain()
