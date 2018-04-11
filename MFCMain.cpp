@@ -67,8 +67,12 @@ int MFCMain::Run()
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 
-			if (!m_ToolSystem.UpdateInput(&msg))
-				break;
+            // HACK: Avoids issue where messages meant for the toolbar or other dialogs is sent to the tool system
+            if (msg.hwnd == m_frame->GetSafeHwnd() || msg.hwnd == m_toolHandle)
+            {
+                if (!m_ToolSystem.UpdateInput(&msg))
+                    break;
+            }
 		}
 		else
 		{

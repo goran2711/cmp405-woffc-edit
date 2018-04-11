@@ -524,10 +524,6 @@ bool ToolMain::UpdateInput(MSG * msg)
                 m_dragging = false;
                 ClipCursor(nullptr);
             }
-            else if (m_brushActive)
-            {
-                // TODO: Refit BVH
-            }
             // Do picking if this is a normal click
             else if (!m_cursorControlsCamera)
             {
@@ -561,11 +557,9 @@ bool ToolMain::UpdateInput(MSG * msg)
                         m_selectedObjects.push_back(id);
                     }
                 }
-                //// FIX: Currently disabled because it causes selection to be immediately
-                ////      cleared when the IDD_DIALOG1 (select) dialogue is up (WM_LBUTTONUP received)
-                // Clear selections if no "selectable" object was clicked
-                //else
-                //	m_selectedObjects.clear();
+                // Clear selections if picking failed
+                else
+                	m_selectedObjects.clear();
             }
         }
         break;
