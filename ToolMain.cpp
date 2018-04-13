@@ -835,7 +835,7 @@ void ToolMain::OnCtrlY()
 void ToolMain::OnCtrlC()
 {
     // Store ID of the objects we wish to copy
-    m_copiedObjects = m_selectedObjects;
+    m_clipboard = m_selectedObjects;
 }
 
 void ToolMain::OnCtrlV()
@@ -847,7 +847,7 @@ void ToolMain::OnCtrlV()
 
     // Unselect objects that are to be copied
     m_selectedObjects.clear();
-    for (int id : m_copiedObjects)
+    for (int id : m_clipboard)
     {
         // Find the selected object
         auto originalObject = std::find_if(m_sceneGraph.cbegin(), m_sceneGraph.cend(), std::bind(hasID, id, _1));
@@ -874,7 +874,4 @@ void ToolMain::OnCtrlV()
         // Select the newly created copy
         m_selectedObjects.push_back(newID);
     }
-
-    // Cleanup
-    m_copiedObjects.clear();
 }

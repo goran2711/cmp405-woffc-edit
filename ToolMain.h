@@ -123,5 +123,5 @@ private:
     DirectX::XMFLOAT3 m_terrainManipPosition;
     bool m_updateTerrainManipPosition = false;
 
-    std::vector<int> m_copiedObjects;
+    std::vector<int> m_clipboard;
 };
