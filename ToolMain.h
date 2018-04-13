@@ -64,7 +64,7 @@ public:
 private:
     // functions
 	void	onContentAdded();
-	void	captureMouse(bool val, bool forFPSCamera);
+	void	captureCursor(bool val, bool forFPSCamera);
 
 	void	UpdateClientCenter();
 

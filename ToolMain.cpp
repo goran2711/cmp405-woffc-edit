@@ -270,7 +270,7 @@ void ToolMain::Tick(MSG *msg)
         m_d3dRenderer.ShowBrushDecal(false);
 
         // TODO: Make this more obvious
-        captureMouse(!m_cursorCaptured, (!m_cursorCaptured && m_captureCursorForCameraThisFrame));
+        captureCursor(!m_cursorCaptured, (!m_cursorCaptured && m_captureCursorForCameraThisFrame));
 
         m_captureCursorThisFrame = false;
         m_captureCursorForCameraThisFrame = false;
@@ -705,7 +705,7 @@ void ToolMain::OnPosChanged(WINDOWPOS newPos)
     m_windowRect.bottom = newPos.y + newPos.cy - BORDER_OFFSET;
 }
 
-void ToolMain::captureMouse(bool val, bool forFPSCamera)
+void ToolMain::captureCursor(bool val, bool forFPSCamera)
 {
     m_cursorCaptured = val;
     m_cursorControlsCamera = (m_cursorCaptured && forFPSCamera);
