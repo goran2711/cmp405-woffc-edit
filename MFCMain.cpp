@@ -137,7 +137,7 @@ void MFCMain::MenuEditTransform()
     }
 	else if (m_ToolSystem.m_selectedObjects.size() > 1)
 	{
-		MessageBox(m_toolHandle, L"Cannot yet manipulate multiple objects at once", L"Error", MB_OK);
+		MessageBox(m_toolHandle, L"Can only manipulate one object at a time", L"Error", MB_OK);
 		return;
 	}
 
