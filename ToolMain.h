@@ -75,6 +75,8 @@ private:	//methods
     void    OnDelete();
     void    OnCtrlZ();
     void    OnCtrlY();
+    void    OnCtrlC();
+    void    OnCtrlV();
 			
 private:	//variables
 	HWND	m_toolHandle;		//Handle to the  window
@@ -118,4 +120,6 @@ private:	//variables
 
     DirectX::XMFLOAT3 m_terrainManipPosition;
     bool m_updateTerrainManipPosition = false;
+
+    std::vector<int> m_copiedObjects;
 };

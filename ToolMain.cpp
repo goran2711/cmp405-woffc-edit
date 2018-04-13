@@ -647,13 +647,33 @@ bool ToolMain::UpdateInput(MSG * msg)
         m_keyArray['Z'] = false;
     }
 
-    // Redo
-    if (GetAsyncKeyState(VK_CONTROL) && m_keyArray['Y'])
+    if (GetAsyncKeyState(VK_CONTROL))
     {
-        OnCtrlY();
+        // Redo
+        if (m_keyArray['Y'])
+        {
+            OnCtrlY();
 
-        m_keyArray['Y'] = false;
+            m_keyArray['Y'] = false;
+        }
+
+        // Copy
+        if (m_keyArray['C'])
+        {
+            OnCtrlC();
+
+            m_keyArray['C'] = false;
+        }
+
+        // Paste
+        if (m_keyArray['V'])
+        {
+            OnCtrlV();
+
+            m_keyArray['V'] = false;
+        }
     }
+
 
     //WASD movement
     m_toolInputCommands.forward = m_keyArray['W'];
@@ -809,4 +829,51 @@ void ToolMain::OnCtrlY()
 
         DeleteSceneObjects(objectsToDelete);
     }
+}
+
+void ToolMain::OnCtrlC()
+{
+    // Store ID of the objects we wish to copy
+    m_copiedObjects = m_selectedObjects;
+}
+
+void ToolMain::OnCtrlV()
+{
+    using namespace std::placeholders;
+
+    int newID = 0;
+    const auto hasID = [](int id, const SceneObject& object) { return object.ID == id; };
+
+    // Unselect objects that are to be copied
+    m_selectedObjects.clear();
+    for (int id : m_copiedObjects)
+    {
+        // Find the selected object
+        auto originalObject = std::find_if(m_sceneGraph.cbegin(), m_sceneGraph.cend(), std::bind(hasID, id, _1));
+
+        if (originalObject == m_sceneGraph.cend())
+            continue;
+
+        // Find a unique ID
+        while (std::find_if(m_sceneGraph.cbegin(), m_sceneGraph.cend(), std::bind(hasID, newID, _1)) != m_sceneGraph.cend())
+            ++newID;
+
+        // Copy selected object
+        SceneObject newSceneObject = *originalObject;
+
+        // Give it a new ID
+        newSceneObject.ID = newID;
+
+        // Add copy to scene graph
+        m_sceneGraph.push_back(newSceneObject);
+
+        // Create visual representation
+        m_d3dRenderer.AddDisplayListItem(newSceneObject);
+
+        // Select the newly created copy
+        m_selectedObjects.push_back(newID);
+    }
+
+    // Cleanup
+    m_copiedObjects.clear();
 }
