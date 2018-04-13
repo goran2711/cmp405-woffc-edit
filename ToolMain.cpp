@@ -390,7 +390,7 @@ SceneObject * ToolMain::GetObjectFromID(int id)
     return &(*object);
 }
 
-void ToolMain::UpdateDisplayObject(SceneObject * sceneObject)
+void ToolMain::UpdateDisplayObject(const SceneObject * sceneObject)
 {
     m_d3dRenderer.UpdateDisplayListItem(*sceneObject);
 }

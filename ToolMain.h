@@ -43,7 +43,7 @@ public:
 
     SceneObject* GetObjectFromID(int id);
 
-    void    UpdateDisplayObject(SceneObject* sceneObject);
+    void    UpdateDisplayObject(const SceneObject* sceneObject);
 
     void    ToggleBrush();
 
@@ -103,10 +103,10 @@ private:
 
     enum MoveAxis
     {
+        AXIS_NONE = 0,
         AXIS_X,
         AXIS_Y,
-        AXIS_Z,
-        AXIS_NONE
+        AXIS_Z
     } m_moveAxis;
 
     bool m_objectHasBeenMoved = false;

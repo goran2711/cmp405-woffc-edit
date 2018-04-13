@@ -9,6 +9,17 @@
 IMPLEMENT_DYNAMIC(TransformDialog, CDialogEx)
 
 BEGIN_MESSAGE_MAP(TransformDialog, CDialogEx)
+    // NOTE: There must be a better way of doing this
+    ON_EN_CHANGE(IDC_EDIT_POSITION_X, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_POSITION_Y, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_POSITION_Z, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_ROTATION_ROLL, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_ROTATION_YAW, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_ROTATION_PITCH, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_SCALE_X, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_SCALE_Y, OnControlChanged)
+    ON_EN_CHANGE(IDC_EDIT_SCALE_Z, OnControlChanged)
+
     ON_COMMAND(IDOK, &TransformDialog::End)
 END_MESSAGE_MAP()
 
@@ -17,22 +28,14 @@ TransformDialog::TransformDialog(CWnd * parent)
 {
 }
 
-void TransformDialog::SetObjects(SceneObject * object)
+void TransformDialog::SetSceneObject(SceneObject * object)
 {
     assert(object != nullptr);
 
     m_object = object;
 
-    if (m_object)
-    {
-        // Write values to dialog controls
-        UpdateData(FALSE);
-    }
-}
-
-void TransformDialog::SetUpdateCallback(UpdateObjectCallback callback)
-{
-    m_update = callback;
+    // Write values to dialog controls
+    UpdateData(FALSE);
 }
 
 void TransformDialog::DoDataExchange(CDataExchange * pDX)
@@ -55,16 +58,17 @@ void TransformDialog::DoDataExchange(CDataExchange * pDX)
     }
 }
 
-void TransformDialog::End()
+void TransformDialog::OnControlChanged()
 {
+    // Read values from dialog controls
     if (m_object)
     {
-        // Read values from dialog controls
         UpdateData(TRUE);
-
-        // Apply changes to display object as well
-        m_update(m_object);
+        m_controlsChanged = true;
     }
+}
 
+void TransformDialog::End()
+{
     DestroyWindow();
 }

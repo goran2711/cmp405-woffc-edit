@@ -103,6 +103,13 @@ int MFCMain::Run()
                 // If an object has been moved by the user, update the controls
                 if (m_ToolSystem.ObjectMovedThisFrame())
                     m_transformDialogue.UpdateData(FALSE);
+
+                // If the controls have changed, update the scene graph and display list
+                if (m_transformDialogue.ControlsChanged())
+                {
+                    m_ToolSystem.UpdateDisplayObject(m_transformDialogue.GetSceneObject());
+                    m_transformDialogue.NotifyDisplayObjectUpdated();
+                }
             }
 
 			//send current object ID to status bar in The main frame
@@ -153,8 +160,8 @@ void MFCMain::MenuEditTransform()
     m_transformDialogue.Create(IDD_DIALOG_TRANSFORM);
     m_transformDialogue.ShowWindow(SW_SHOW);
 
-    m_transformDialogue.SetObjects(m_ToolSystem.GetObjectFromID(m_ToolSystem.getCurrentSelectionIDs().front()));
-    m_transformDialogue.SetUpdateCallback(std::bind(&ToolMain::UpdateDisplayObject, &m_ToolSystem, _1));
+    SceneObject* object = m_ToolSystem.GetObjectFromID(m_ToolSystem.getCurrentSelectionIDs().front());
+    m_transformDialogue.SetSceneObject(object);
 }
 
 void MFCMain::ToolBarButton1()

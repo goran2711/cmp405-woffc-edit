@@ -21,22 +21,23 @@ public:
     enum { IDD = IDD_DIALOG_TRANSFORM };
 #endif
 
-    void SetObjects(SceneObject* object);
+    void SetSceneObject(SceneObject* object);
 
-    using UpdateObjectCallback = std::function<void(SceneObject*)>;
-    // Set a callback that will be used to update the display object
-    // (TransformDialog only changes SceneObject directly)
-    void SetUpdateCallback(UpdateObjectCallback callback);
+    void NotifyDisplayObjectUpdated() { m_controlsChanged = false; }
+    bool ControlsChanged() const { return m_controlsChanged; }
+
+    const SceneObject* GetSceneObject() const { return m_object; }
 
 protected:
     // Allows us to get access to the dialog's resources
     virtual void DoDataExchange(CDataExchange* pDX) override;
 
 private:
+    afx_msg void OnControlChanged();
     afx_msg void End();
 
     SceneObject* m_object;
-    UpdateObjectCallback m_update;
+    bool m_controlsChanged = false;
 
     DECLARE_MESSAGE_MAP()
 };
