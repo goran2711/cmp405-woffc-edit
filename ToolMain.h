@@ -17,12 +17,14 @@ class ToolMain
     // (WM_MOUSEMOVE is not sent when mouse overlaps border--annoying when cursor is clipped)
     constexpr static long BORDER_OFFSET = 2;
 
-public: //methods
+public:
+    // ctors/dtor
 	ToolMain();
 	ToolMain(const ToolMain&) = delete;
 	ToolMain& operator=(const ToolMain&) = delete;
 	~ToolMain();
 
+    // functions
 	//onAction - These are the interface to MFC
 	const std::vector<int> ToolMain::getCurrentSelectionIDs() const;		//returns the selection number of currently selected object so that It can be displayed.
 	void	onActionInitialise(HWND handle, int width, int height);			//Passes through handle and hieght and width and initialises DirectX renderer and SQL LITE
@@ -45,7 +47,9 @@ public: //methods
 
     void    ToggleBrush();
 
-public:	//variables
+    bool    ObjectMovedThisFrame() const { return m_objectHasBeenMoved; }
+
+    //variables
 	std::vector<SceneObject>    m_sceneGraph;	//our scenegraph storing all the objects in the current chunk
 
     // TODO: Handle more than just deletion--prob need some custom structure to handle that ...
@@ -57,7 +61,8 @@ public:	//variables
 	ChunkObject					m_chunk;		//our landscape chunk
 	std::vector<int> m_selectedObjects;						//ID of current Selection
 
-private:	//methods
+private:
+    // functions
 	void	onContentAdded();
 	void	captureMouse(bool val, bool forFPSCamera);
 
@@ -73,7 +78,7 @@ private:	//methods
     void    OnCtrlC();
     void    OnCtrlV();
 			
-private:	//variables
+    // variables
 	HWND	m_toolHandle;		//Handle to the  window
 	Game	m_d3dRenderer;		//Instance of D3D rendering system for our tool
 	InputCommands m_toolInputCommands;		//input commands that we want to use and possibly pass over to the renderer
@@ -103,6 +108,8 @@ private:	//variables
         AXIS_Z,
         AXIS_NONE
     } m_moveAxis;
+
+    bool m_objectHasBeenMoved = false;
 
 	// rectangle selection (rts style)
 	bool m_dragging = false;

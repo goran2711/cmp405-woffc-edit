@@ -14,8 +14,6 @@ class TransformDialog : public CDialogEx
     DECLARE_DYNAMIC(TransformDialog)
 
 public:
-    using UpdateObjectCallback = std::function<void(SceneObject*)>;
-
     explicit TransformDialog(CWnd* parent = nullptr);
 
     // Dialog Triangle
@@ -24,6 +22,10 @@ public:
 #endif
 
     void SetObjects(SceneObject* object);
+
+    using UpdateObjectCallback = std::function<void(SceneObject*)>;
+    // Set a callback that will be used to update the display object
+    // (TransformDialog only changes SceneObject directly)
     void SetUpdateCallback(UpdateObjectCallback callback);
 
 protected:
@@ -31,17 +33,10 @@ protected:
     virtual void DoDataExchange(CDataExchange* pDX) override;
 
 private:
-    float GetCEditTextAsFloat(const CEdit& cedit) const;
-
     afx_msg void End();
 
-    // TODO: Extend this to allow multiple objects to be transformed at once
     SceneObject* m_object;
     UpdateObjectCallback m_update;
-
-    CEdit m_positionX, m_positionY, m_positionZ;
-    CEdit m_rotationR, m_rotationY, m_rotationP;
-    CEdit m_scaleX, m_scaleY, m_scaleZ;
 
     DECLARE_MESSAGE_MAP()
 };

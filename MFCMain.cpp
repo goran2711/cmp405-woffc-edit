@@ -96,6 +96,15 @@ int MFCMain::Run()
 
 			m_ToolSystem.Tick(&msg);
 
+            // Update the values displayed in the transform dialog
+            // NOTE: This works because CWnd allows for implicit conversion to HANDLE, which is just a typedef of void*
+            if (m_transformDialogue)
+            {
+                // If an object has been moved by the user, update the controls
+                if (m_ToolSystem.ObjectMovedThisFrame())
+                    m_transformDialogue.UpdateData(FALSE);
+            }
+
 			//send current object ID to status bar in The main frame
 			m_frame->m_wndStatusBar.SetPaneText(1, statusString.c_str(), 1);
 		}

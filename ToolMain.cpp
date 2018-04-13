@@ -260,20 +260,18 @@ void ToolMain::onActionSaveTerrain()
 
 void ToolMain::Tick(MSG *msg)
 {
-    //do we have a selection
-    //do we have a mode
-    //are we clicking / dragging /releasing
-    //has something changed
-        //update Scenegraph
-        //add to scenegraph
-        //resend scenegraph to Direct X renderer
+    // New tick, so reset this
+    m_objectHasBeenMoved = false;
 
+    // Handle capturing the cursor
     if (m_captureCursorThisFrame)
     {
         // Hide brush decal (in case it was visible)
         m_d3dRenderer.ShowBrushDecal(false);
 
+        // TODO: Make this more obvious
         captureMouse(!m_cursorCaptured, (!m_cursorCaptured && m_captureCursorForCameraThisFrame));
+
         m_captureCursorThisFrame = false;
         m_captureCursorForCameraThisFrame = false;
     }
@@ -314,6 +312,9 @@ void ToolMain::Tick(MSG *msg)
                     }
 
                     UpdateDisplayObject(object);
+
+                    // Reveals if an object has been moved this frame--used to notify the transfom dialog so it can update its controls
+                    m_objectHasBeenMoved = true;
                 }
             }
         }

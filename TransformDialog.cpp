@@ -25,17 +25,8 @@ void TransformDialog::SetObjects(SceneObject * object)
 
     if (m_object)
     {
-        m_positionX.SetWindowTextW(std::to_wstring(m_object->posX).c_str());
-        m_positionY.SetWindowTextW(std::to_wstring(m_object->posY).c_str());
-        m_positionZ.SetWindowTextW(std::to_wstring(m_object->posZ).c_str());
-
-        m_rotationR.SetWindowTextW(std::to_wstring(m_object->rotX).c_str());
-        m_rotationY.SetWindowTextW(std::to_wstring(m_object->rotY).c_str());
-        m_rotationP.SetWindowTextW(std::to_wstring(m_object->rotZ).c_str());
-
-        m_scaleX.SetWindowTextW(std::to_wstring(m_object->scaX).c_str());
-        m_scaleY.SetWindowTextW(std::to_wstring(m_object->scaY).c_str());
-        m_scaleZ.SetWindowTextW(std::to_wstring(m_object->scaZ).c_str());
+        // Write values to dialog controls
+        UpdateData(FALSE);
     }
 }
 
@@ -48,47 +39,32 @@ void TransformDialog::DoDataExchange(CDataExchange * pDX)
 {
     CDialogEx::DoDataExchange(pDX);
 
-    DDX_Control(pDX, IDC_EDIT_POSITION_X, m_positionX);
-    DDX_Control(pDX, IDC_EDIT_POSITION_Y, m_positionY);
-    DDX_Control(pDX, IDC_EDIT_POSITION_Z, m_positionZ);
+    if (m_object)
+    {
+        DDX_Text(pDX, IDC_EDIT_POSITION_X, m_object->posX);
+        DDX_Text(pDX, IDC_EDIT_POSITION_Y, m_object->posY);
+        DDX_Text(pDX, IDC_EDIT_POSITION_Z, m_object->posZ);
 
-    DDX_Control(pDX, IDC_EDIT_ROTATION_ROLL, m_rotationR);
-    DDX_Control(pDX, IDC_EDIT_ROTATION_YAW, m_rotationY);
-    DDX_Control(pDX, IDC_EDIT_ROTATION_PITCH, m_rotationP);
+        DDX_Text(pDX, IDC_EDIT_ROTATION_ROLL, m_object->rotX);
+        DDX_Text(pDX, IDC_EDIT_ROTATION_YAW, m_object->rotY);
+        DDX_Text(pDX, IDC_EDIT_ROTATION_PITCH, m_object->rotZ);
 
-    DDX_Control(pDX, IDC_EDIT_SCALE_X, m_scaleX);
-    DDX_Control(pDX, IDC_EDIT_SCALE_Y, m_scaleY);
-    DDX_Control(pDX, IDC_EDIT_SCALE_Z, m_scaleZ);
-}
-
-float TransformDialog::GetCEditTextAsFloat(const CEdit & cedit) const
-{
-    int length = cedit.GetWindowTextLengthW();
-
-    std::vector<TCHAR> buf(length);
-    cedit.GetWindowTextW(buf.data(), length);
-
-    float num = wcstof(buf.data(), nullptr);
-    return num;
+        DDX_Text(pDX, IDC_EDIT_SCALE_X, m_object->scaX);
+        DDX_Text(pDX, IDC_EDIT_SCALE_Y, m_object->scaY);
+        DDX_Text(pDX, IDC_EDIT_SCALE_Z, m_object->scaZ);
+    }
 }
 
 void TransformDialog::End()
 {
     if (m_object)
     {
-        m_object->posX = GetCEditTextAsFloat(m_positionX);
-        m_object->posY = GetCEditTextAsFloat(m_positionY);
-        m_object->posZ = GetCEditTextAsFloat(m_positionZ);
+        // Read values from dialog controls
+        UpdateData(TRUE);
 
-        m_object->rotX = GetCEditTextAsFloat(m_rotationR);
-        m_object->rotY = GetCEditTextAsFloat(m_rotationY);
-        m_object->rotZ = GetCEditTextAsFloat(m_rotationP);
-
-        m_object->scaX = GetCEditTextAsFloat(m_scaleX);
-        m_object->scaY = GetCEditTextAsFloat(m_scaleY);
-        m_object->scaZ = GetCEditTextAsFloat(m_scaleZ);
+        // Apply changes to display object as well
+        m_update(m_object);
     }
 
-    m_update(m_object);
     DestroyWindow();
 }
