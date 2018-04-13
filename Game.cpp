@@ -408,7 +408,6 @@ void Game::Render()
 			std::max(selRectBeginY, selRectEndY)    // bottom
 		};
 
-		// FIX: Not actually transparent
 		m_sprites->Begin(SpriteSortMode::SpriteSortMode_Deferred, m_states->AlphaBlend());
 		m_sprites->Draw(m_selectionBoxTexture.Get(), selectionRect);
 		m_sprites->End();
@@ -986,12 +985,16 @@ void XM_CALLCONV Game::SetBrushDecalPosition(FXMVECTOR wsCoord, float brushSize)
     XMVECTOR projectorFocus = projectorPosition + XMVectorSet(0.f, -1.f, 0.f, 0.f);
     XMMATRIX projectorView = XMMatrixLookAtLH(projectorPosition, projectorFocus, XMVectorSet(0.f, 0.f, 1.f, 0.f));
 
-    // Use orthogoraphic projection
-    // FIX: Should not be recreated every frame
-    XMMATRIX projectorProjection = XMMatrixOrthographicLH(brushSize, brushSize, 0.01f, PROJECTOR_FAR);
+    // Update projection matrix if brush size changed
+    if (m_brushSize != brushSize)
+    {
+        XMMATRIX projectorProjection = XMMatrixOrthographicLH(brushSize, brushSize, 0.01f, PROJECTOR_FAR);
+
+        XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
+        m_brushSize = brushSize;
+    }
 
     XMStoreFloat4x4(&m_projectorView, projectorView);
-    XMStoreFloat4x4(&m_projectorProjection, projectorProjection);
 }
 
 void XM_CALLCONV Game::ManipulateTerrain(DirectX::FXMVECTOR wsCoord, bool elevate, float brushSize, float brushForce)
@@ -1066,7 +1069,6 @@ void Game::CreateDeviceDependentResources()
     m_decalCube->CreateInputLayout(m_volumeDecal.get(), m_volumeDecalInputLayout.ReleaseAndGetAddressOf());
 
     // Load decal texture
-    // FIX: Figure out how to load in my own texture
     DX::ThrowIfFailed(
 		CreateDDSTextureFromFile(device, L"database/data/brush_marker.dds", nullptr, m_brushMarkerDecalSRV.ReleaseAndGetAddressOf())
     );

@@ -119,6 +119,7 @@ private:
 	InputCommands						inputCommands;
     
     bool m_showTerrainBrush = false;
+    float m_brushSize = 0.f;
 
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssWriteSelectedObject;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssNotEqSelectedObject;
