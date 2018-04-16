@@ -80,11 +80,18 @@ int MFCMain::Run()
 
 			// TODO: Deal with cases where _A LOT_ of object are selected (so many that we don't want to show all the IDs
 			//       in the status bar)
-			std::wstring statusString = L"Selected Objects: ";
+			std::wstring statusString = L"Selected objects: ";
 			if (selectionIDs.empty())
 				statusString += L"none";
 			else
 			{
+                // Fix language
+                if (selectionIDs.size() == 1)
+                {
+                    int idx = statusString.find_last_of(L's');
+                    statusString.erase(statusString.begin() + idx);
+                }
+
 				for (int i : selectionIDs)
 				{
 					statusString += std::to_wstring(i);
