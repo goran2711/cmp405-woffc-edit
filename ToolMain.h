@@ -121,6 +121,7 @@ private:
     float m_brushForce = 1.25f;
 
     DirectX::XMFLOAT3 m_terrainManipPosition;
+	bool m_cursorIntersectsTerrain = false;
     bool m_updateTerrainManipPosition = false;
 
     std::vector<int> m_clipboard;

@@ -329,17 +329,22 @@ void ToolMain::Tick(MSG *msg)
     {
         XMVECTOR wsCoord;
 
-        bool intersectsTerrain = true;
-        if (m_updateTerrainManipPosition)
+        bool intersectsTerrain = false;
+        if (m_updateTerrainManipPosition || !m_cursorIntersectsTerrain)
         {
             intersectsTerrain = m_d3dRenderer.CursorIntersectsTerrain(m_cursorPos.x, m_cursorPos.y, wsCoord);
 
             // Only update the stored position if intersection test passed
             if (intersectsTerrain)
                 XMStoreFloat3(&m_terrainManipPosition, wsCoord);
+
+			m_cursorIntersectsTerrain = intersectsTerrain;
         }
-        else
-            wsCoord = XMLoadFloat3(&m_terrainManipPosition);
+		else if (m_cursorIntersectsTerrain)
+		{
+			intersectsTerrain = true;
+			wsCoord = XMLoadFloat3(&m_terrainManipPosition);
+		}
 
         m_updateTerrainManipPosition = false;
 
@@ -442,7 +447,7 @@ bool ToolMain::UpdateInput(MSG * msg)
             m_cursorPos.y = GET_Y_LPARAM(msg->lParam);
 
             // Whenever the cursor moves, terrain-cursor intersection must be done again
-            if (m_brushActive)
+            if (m_brushActive && m_cursorIntersectsTerrain)
                 m_updateTerrainManipPosition = true;
 
             // if the left mouse button is down (dragging) and the mouse is free
