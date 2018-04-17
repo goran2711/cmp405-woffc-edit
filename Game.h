@@ -26,6 +26,8 @@
 // provides a game loop.
 class Game : public DX::IDeviceNotify
 {
+	static const DirectX::XMVECTORF32 HIGHLIGHT_COLOUR;
+
     enum StencilMask
     {
         STENCIL_SELECTED_OBJECT = (1 << 0),

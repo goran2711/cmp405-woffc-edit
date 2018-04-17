@@ -14,6 +14,8 @@ using namespace DirectX;
 
 using Microsoft::WRL::ComPtr;
 
+/* static */ const XMVECTORF32 Game::HIGHLIGHT_COLOUR = { 1.f, 1.f, 0.f, 0.5f };
+
 Game::Game()
 {
     // NOTE: Need to use DSS format R24G8_TYPELESS because I am creating a SRV for it
@@ -282,7 +284,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_decalMatrixBuffer.SetData(context, m_decalMatrices);
 
         // Project decal onto terrain
-        m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
+        m_sprites->Begin(SpriteSortMode_Immediate, m_states->NonPremultiplied(), nullptr, nullptr, nullptr, [&]
         {
             // Custom state
             context->OMSetDepthStencilState(m_dss[DSS_EQ_TERRAIN].Get(), STENCIL_TERRAIN);
@@ -337,8 +339,8 @@ void Game::PostProcess(ID3D11DeviceContext* context)
 
         context->OMSetRenderTargets(1, rtv, m_deviceResources->GetDepthStencilView());
 
-        // Render the blurred texture on top of the already rendered screen (with additive blending) while respecting the stencil buffer
-        m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
+        // Render the blurred texture on top of the already rendered screen (with blending) while respecting the stencil buffer
+        m_sprites->Begin(SpriteSortMode_Immediate, m_states->AlphaBlend(), nullptr, nullptr, nullptr, [&]
         {
             // Do not blend the blurred texture with the areas occupied by a selected object
             context->OMSetDepthStencilState(m_dss[DSS_NOT_EQ_SELECTED_OBJECT].Get(), STENCIL_SELECTED_OBJECT);
@@ -408,7 +410,7 @@ void Game::Render()
 			std::max(selRectBeginY, selRectEndY)    // bottom
 		};
 
-		m_sprites->Begin(SpriteSortMode::SpriteSortMode_Deferred, m_states->AlphaBlend());
+		m_sprites->Begin(SpriteSortMode::SpriteSortMode_Deferred, m_states->NonPremultiplied());
 		m_sprites->Draw(m_selectionBoxTexture.Get(), selectionRect);
 		m_sprites->End();
 	}
@@ -437,9 +439,10 @@ void Game::Clear()
 	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	context->OMSetRenderTargets(1, &renderTarget, depthStencil);
 
-    context->ClearRenderTargetView(m_highlightRTV.Get(), Colors::Black);
-    context->ClearRenderTargetView(m_rt1RTV.Get(), Colors::Black);
-    context->ClearRenderTargetView(m_rt2RTV.Get(), Colors::Black);
+	constexpr float TRANSPARENT_BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
+    context->ClearRenderTargetView(m_highlightRTV.Get(), TRANSPARENT_BLACK);
+    context->ClearRenderTargetView(m_rt1RTV.Get(), TRANSPARENT_BLACK);
+    context->ClearRenderTargetView(m_rt2RTV.Get(), TRANSPARENT_BLACK);
 
 	// Set the viewport.
 	auto viewport = m_deviceResources->GetScreenViewport();
@@ -1057,7 +1060,7 @@ void Game::CreateDeviceDependentResources()
 	}
 	
 	m_highlightEffect = std::make_unique<HighlightEffect>(m_deviceResources->GetD3DDevice());
-    m_highlightEffect->SetHighlightColour(Colors::Yellow);
+    m_highlightEffect->SetHighlightColour(HIGHLIGHT_COLOUR);
 
     m_blurPostProcess = std::make_unique<BasicPostProcess>(m_deviceResources->GetD3DDevice());
 
@@ -1086,9 +1089,8 @@ void Game::CreateDeviceDependentResources()
 	// Create a 1x1 texture for selection box
 	CD3D11_TEXTURE2D_DESC selBoxTexDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, 1U, 1U, 1U, 0U, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_IMMUTABLE);
 
-    XMVECTOR pixel = XMVectorSet(1.f, 1.f, 0.f, 0.1f);
 	D3D11_SUBRESOURCE_DATA initialData;
-	initialData.pSysMem = &pixel.m128_f32;
+	initialData.pSysMem = HIGHLIGHT_COLOUR.f;
 	initialData.SysMemPitch = sizeof(float) * 4;
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> selectionTex;
