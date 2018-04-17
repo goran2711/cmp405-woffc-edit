@@ -335,7 +335,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_blurPostProcess->SetSourceTexture(m_rt1SRV.Get());
         m_blurPostProcess->Process(context);
 
-        // NOTE: Upscaling is done "implicitly" by applying the blurred texture on a sprite that covers the entire back-buffer
+        // NOTE: Upscaling is done implicitly by applying the blurred texture on a sprite that covers the entire back-buffer
         ID3D11RenderTargetView* rtv[] = { m_deviceResources->GetBackBufferRenderTargetView() };
         context->RSSetViewports(1, &viewport);
 
@@ -504,8 +504,8 @@ bool XM_CALLCONV Game::CreateScreenSpaceBoundingBox(const DirectX::BoundingBox &
 {
 	const auto viewport = m_deviceResources->GetScreenViewport();
 
-	XMVECTOR center = XMLoadFloat3(&modelSpaceBB.Center);
-	XMVECTOR extents = XMLoadFloat3(&modelSpaceBB.Extents);
+	const XMVECTOR center = XMLoadFloat3(&modelSpaceBB.Center);
+	const XMVECTOR extents = XMLoadFloat3(&modelSpaceBB.Extents);
 
 	// project all corners to screen space
 	static const XMVECTOR offsets[8] =
@@ -520,28 +520,23 @@ bool XM_CALLCONV Game::CreateScreenSpaceBoundingBox(const DirectX::BoundingBox &
 		XMVectorSet( 1.f, -1.f, -1.f, 1.f)		// bottom right back
 	};
 
-	// Including storing/loading in annotation because the alternate method does not require it
-	// (Measuring overhead to be fair)
 	m_deviceResources->PIXBeginEvent(L"Selection box picking: XMVector3ProjectStream");
 
 	// calculate corners
 	XMFLOAT3 cornerStream[8];
 	for (int i = 0; i < 8; ++i)
 	{
-		XMVECTOR corner = center + (extents * offsets[i]);
+		const XMVECTOR corner = center + (extents * offsets[i]);
 		XMStoreFloat3(&cornerStream[i], corner);
 	}
 
 	// do the actual projection
-	// NOTE: From looking at nsight, XMVector3ProjectStream approach takes avg. 2�s
-	//        while XMVector3Project (8 times) takes ~7�s
-	//       So while it looks a bit more unruly, there is some evidence to justify the choice
 	XMFLOAT3 projectedCornerStream[8];
 	XMVector3ProjectStream(projectedCornerStream, sizeof(XMFLOAT3), cornerStream, sizeof(XMFLOAT3), 8,
 						   0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, m_view, local);
 
 	std::vector<XMVECTOR> corners(8);
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < corners.size(); ++i)
 		corners[i] = XMLoadFloat3(&projectedCornerStream[i]);
 
 	m_deviceResources->PIXEndEvent();
@@ -551,19 +546,17 @@ bool XM_CALLCONV Game::CreateScreenSpaceBoundingBox(const DirectX::BoundingBox &
 	const XMVECTOR lowBounds = XMVectorZero();
 	const XMVECTOR highBounds = XMVectorSet(viewport.Width, viewport.Height, 1.f, 0.f);
 	
-	for (auto corner = corners.begin(); corner != corners.end();)
+	corners.erase(std::remove_if(corners.begin(), corners.end(),
+		[lowBounds, highBounds] (FXMVECTOR corner)
 	{
-		bool inLowBounds = XMVector3GreaterOrEqual(*corner, lowBounds);
-		bool inHighBounds = XMVector3Less(*corner, highBounds);
+		bool inLowBounds = XMVector3GreaterOrEqual(corner, lowBounds);
+		bool inHighBounds = XMVector3Less(corner, highBounds);
 
-		if (!(inLowBounds && inHighBounds))
-			corner = corners.erase(corner);
-		else
-			++corner;
-	}
+		return !(inLowBounds && inHighBounds);
+	}), corners.end());
 
-	// There are not enough corners(triangles) left to create a bounding box...
-	if (corners.size() < 2)
+	// Guess we're not making a BB then
+	if (corners.empty())
 		return false;
 
 	// Calculate min coordinates
@@ -571,21 +564,13 @@ bool XM_CALLCONV Game::CreateScreenSpaceBoundingBox(const DirectX::BoundingBox &
 	for (int i = 0; i < corners.size(); ++i)
 		min = XMVectorMin(min, corners[i]);
 
-	float minX = XMVectorGetX(min);
-	float minY = XMVectorGetY(min);
-	float minZ = XMVectorGetZ(min);
-
 	// Calculate max coordinates
 	XMVECTOR max = XMVectorZero();
 	for (int i = 0; i < corners.size(); ++i)
 		max = XMVectorMax(max, corners[i]);
 
-	float maxX = XMVectorGetX(max);
-	float maxY = XMVectorGetY(max);
-	float maxZ = XMVectorGetZ(max);
-
 	// Create screen-space bounding box
-	screenSpaceBB.CreateFromPoints(screenSpaceBB, XMVectorSet(minX, minY, minZ, 1.f), XMVectorSet(maxX, maxY, maxZ, 1.f));
+	screenSpaceBB.CreateFromPoints(screenSpaceBB, min, max);
 
 	return true;
 }
@@ -805,7 +790,6 @@ bool Game::Pick(POINT cursorPos, RECT clientRect, int& id) const
 			auto world = SimpleMath::Matrix::CreateScale(itModel->m_scale) * SimpleMath::Matrix::CreateFromYawPitchRoll(itModel->m_orientation.x, itModel->m_orientation.y, itModel->m_orientation.z) * SimpleMath::Matrix::CreateTranslation(itModel->m_position);
 
 			// Convert points to model space
-			// NOTE: Could also use SimpleMath::Viewport::Unproject, but afaik I don't already have a SimpleMath::Viewport
 			XMVECTOR nearPointMS = XMVector3Unproject(nearPoint, clientRect.left, clientRect.top, clientRect.right, clientRect.bottom, 0.f, 1.f, m_projection, m_view, world);
 			XMVECTOR farPointMS = XMVector3Unproject(farPoint, clientRect.left, clientRect.top, clientRect.right, clientRect.bottom, 0.f, 1.f, m_projection, m_view, world);
 

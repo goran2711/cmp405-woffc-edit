@@ -47,7 +47,6 @@ private:
     HighlightProperties m_highlightProperties;
     ConstantBuffer<HighlightProperties> m_propertiesBuffer;
 
-    // NOTE: This one has some EffectDirtyFlags business I'm don't fully comprehend yet--might want to look into it(the DXTK git)
     EffectMatrices m_matrices;
     ConstantBuffer<EffectMatrices> m_matrixBuffer;
 };
