@@ -168,22 +168,10 @@
     <Media Include="database\data\Scene1.fbx" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="passthrough_vs.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="highlight_vs.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="highlight_ps.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="depthSample_cs.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="volumeDecal_vs.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="volumeDecal_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="decal_ps.hlsl">
