@@ -65,16 +65,21 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="TransformDialog.cpp" />
-    <ClCompile Include="HighlightEffect.cpp" />
-    <ClCompile Include="DepthSampler.cpp" />
-    <ClCompile Include="VolumeDecal.cpp" />
     <ClCompile Include="CustomEffect.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="DecalEffect.cpp" />
-    <ClCompile Include="Octree.cpp" />
-    <ClCompile Include="BVH.cpp" />
+    <ClCompile Include="TransformDialog.cpp">
+      <Filter>MFC</Filter>
+    </ClCompile>
+    <ClCompile Include="BVH.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="DecalEffect.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="HighlightEffect.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeviceResources.h">
@@ -130,19 +135,24 @@
     <ClInclude Include="ReadData.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="TransformDialog.h" />
-    <ClInclude Include="HighlightEffect.h" />
-    <ClInclude Include="DepthSampler.h" />
-    <ClInclude Include="VolumeDecal.h" />
     <ClInclude Include="ConstantBuffer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="CustomEffect.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="DecalEffect.h" />
-    <ClInclude Include="Octree.h" />
-    <ClInclude Include="BVH.h" />
+    <ClInclude Include="TransformDialog.h">
+      <Filter>MFC</Filter>
+    </ClInclude>
+    <ClInclude Include="BVH.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="DecalEffect.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="HighlightEffect.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Win32SimpleSample.rc">
@@ -158,13 +168,7 @@
     <Media Include="database\data\Scene1.fbx" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="pivot_gs.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="passthrough_vs.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="pivot_ps.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="highlight_vs.hlsl">

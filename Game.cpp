@@ -99,7 +99,7 @@ void Game::Initialize(HWND window, int width, int height)
     );
 
     // DSS for writing selected object to stencil buffer
-    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssWriteSelectedObject.ReleaseAndGetAddressOf());
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dss[DSS_WRITE_SELECTED_OBJECT].ReleaseAndGetAddressOf());
 
     // DSS for reading selected object from stencil buffer (pass if read value != STENCIL_SELECTED_OBJECT--makes stencil act as cutout)
     dsDesc.StencilReadMask = STENCIL_SELECTED_OBJECT;
@@ -109,7 +109,7 @@ void Game::Initialize(HWND window, int width, int height)
 	dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_NOT_EQUAL;
 
-    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssNotEqSelectedObject.ReleaseAndGetAddressOf());
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dss[DSS_NOT_EQ_SELECTED_OBJECT].ReleaseAndGetAddressOf());
 
     // DSS for writing terrain to stencil buffer
     dsDesc.DepthEnable = TRUE;
@@ -120,7 +120,7 @@ void Game::Initialize(HWND window, int width, int height)
     dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
     dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssWriteTerrain.ReleaseAndGetAddressOf());
+    m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dss[DSS_WRITE_TERRAIN].ReleaseAndGetAddressOf());
 
     // DSS for reading terrain from stencil buffer (pass if read value == STENCIL_TERRAIN--makes decal only appear on terrain)
     dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
@@ -128,7 +128,7 @@ void Game::Initialize(HWND window, int width, int height)
     dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
     dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
 
-	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dssEqTerrain.ReleaseAndGetAddressOf());
+	m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dss[DSS_EQ_TERRAIN].ReleaseAndGetAddressOf());
 }
 
 void Game::SetGridState(bool state)
@@ -255,7 +255,7 @@ void XM_CALLCONV Game::RenderSelectedObject(ID3D11DeviceContext* context, const 
             part->Draw(context, m_highlightEffect.get(), m_highlightEffectLayouts[mesh->name][j++].Get(), [&]
             {
                 // Custom DSS so the mesh will be rendered to the stencil buffer also
-                context->OMSetDepthStencilState(m_dssWriteSelectedObject.Get(), STENCIL_SELECTED_OBJECT);
+                context->OMSetDepthStencilState(m_dss[DSS_WRITE_SELECTED_OBJECT].Get(), STENCIL_SELECTED_OBJECT);
             });
         }
     }
@@ -285,7 +285,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
         {
             // Custom state
-            context->OMSetDepthStencilState(m_dssEqTerrain.Get(), STENCIL_TERRAIN);
+            context->OMSetDepthStencilState(m_dss[DSS_EQ_TERRAIN].Get(), STENCIL_TERRAIN);
 
             // Const buffers
             context->PSSetConstantBuffers(0, 1, m_decalMatrixBuffer.GetAddressOfBuffer());
@@ -295,7 +295,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
 
             // Textures
             // NOTE: register(t0) is set to m_depthStencilSRVCopy.Get() by SpriteBatch
-            context->PSSetShaderResources(1, 1, m_brushMarkerDecalSRV.GetAddressOf());
+            context->PSSetShaderResources(1, 1, m_brushDecalTextureSRV.GetAddressOf());
         });
         m_sprites->Draw(m_depthStencilSRVCopy.Get(), fullscreenRect);
         m_sprites->End();
@@ -341,7 +341,7 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         m_sprites->Begin(SpriteSortMode_Immediate, m_states->Additive(), nullptr, nullptr, nullptr, [&]
         {
             // Do not blend the blurred texture with the areas occupied by a selected object
-            context->OMSetDepthStencilState(m_dssNotEqSelectedObject.Get(), STENCIL_SELECTED_OBJECT);
+            context->OMSetDepthStencilState(m_dss[DSS_NOT_EQ_SELECTED_OBJECT].Get(), STENCIL_SELECTED_OBJECT);
         });
         m_sprites->Draw(m_rt2SRV.Get(), fullscreenRect);
         m_sprites->End();
@@ -379,7 +379,7 @@ void Game::Render()
     //RENDER TERRAIN
     context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
     // Imprint the terrain onto the stencil buffer
-    context->OMSetDepthStencilState(m_dssWriteTerrain.Get(), STENCIL_TERRAIN);
+    context->OMSetDepthStencilState(m_dss[DSS_WRITE_TERRAIN].Get(), STENCIL_TERRAIN);
     context->RSSetState(m_states->CullNone());
 
     ID3D11SamplerState* samplers[] = { m_states->AnisotropicWrap() };
@@ -440,7 +440,6 @@ void Game::Clear()
     context->ClearRenderTargetView(m_highlightRTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt1RTV.Get(), Colors::Black);
     context->ClearRenderTargetView(m_rt2RTV.Get(), Colors::Black);
-    context->ClearRenderTargetView(m_rt3RTV.Get(), XMVectorSet(0.f, 0.f, 0.f, 0.f).m128_f32);
 
 	// Set the viewport.
 	auto viewport = m_deviceResources->GetScreenViewport();
@@ -1062,15 +1061,9 @@ void Game::CreateDeviceDependentResources()
 
     m_blurPostProcess = std::make_unique<BasicPostProcess>(m_deviceResources->GetD3DDevice());
 
-    m_depthSampler = std::make_unique<DepthSampler>(m_deviceResources->GetD3DDevice(), m_deviceResources->GetDepthBufferFormat());
-    m_volumeDecal = std::make_unique<VolumeDecal>(m_deviceResources->GetD3DDevice());
-
-    m_decalCube = GeometricPrimitive::CreateCube(m_deviceResources->GetD3DDeviceContext());
-    m_decalCube->CreateInputLayout(m_volumeDecal.get(), m_volumeDecalInputLayout.ReleaseAndGetAddressOf());
-
     // Load decal texture
     DX::ThrowIfFailed(
-		CreateDDSTextureFromFile(device, L"database/data/brush_marker.dds", nullptr, m_brushMarkerDecalSRV.ReleaseAndGetAddressOf())
+		CreateDDSTextureFromFile(device, L"database/data/brush_marker.dds", nullptr, m_brushDecalTextureSRV.ReleaseAndGetAddressOf())
     );
 
 	m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
@@ -1090,23 +1083,6 @@ void Game::CreateDeviceDependentResources()
 		CreateDDSTextureFromFile(device, L"windowslogo.dds", nullptr, m_texture2.ReleaseAndGetAddressOf())
 	);
 
-	m_pivotBatch = std::make_unique<PrimitiveBatch<VertexPosition>>(context);
-	m_pivotEffect = std::make_unique<BasicEffect>(device);
-
-	{
-		void const* shaderByteCode;
-		size_t byteCodeLength;
-
-		m_pivotEffect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
-
-		device->CreateInputLayout(VertexPosition::InputElements, VertexPosition::InputElementCount, shaderByteCode, byteCodeLength, m_pivotInputLayout.ReleaseAndGetAddressOf());
-	}
-
-	// TODO: Load geometry shader .cso file to blob
-	auto blob = DX::ReadData(L"pivot_gs.cso");
-	device->CreateGeometryShader(blob.data(), blob.size(), nullptr, m_pivotGeometryShader.ReleaseAndGetAddressOf());
-
-
 	// Create a 1x1 texture for selection box
 	CD3D11_TEXTURE2D_DESC selBoxTexDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, 1U, 1U, 1U, 0U, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_IMMUTABLE);
 
@@ -1120,15 +1096,6 @@ void Game::CreateDeviceDependentResources()
 
 	CD3D11_SHADER_RESOURCE_VIEW_DESC selSRVdesc(D3D11_SRV_DIMENSION_TEXTURE2D, selBoxTexDesc.Format);
 	device->CreateShaderResourceView(selectionTex.Get(), &selSRVdesc, m_selectionBoxTexture.ReleaseAndGetAddressOf());
-
-    // Set decal texture
-    m_volumeDecal->SetDecalTexture(m_brushMarkerDecalSRV.Get());
-
-    static constexpr float transparentBlack[] = { 0.f, 0.f, 0.f, 0.f };
-    CD3D11_SAMPLER_DESC ssDesc(D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER,
-                               0, 1, D3D11_COMPARISON_NEVER, transparentBlack, -FLT_MAX, FLT_MAX);
-    device->CreateSamplerState(&ssDesc, m_linearBorderSS.ReleaseAndGetAddressOf());
-
 
     // Create pixel shader for decaling
     auto decalPSBlob = DX::ReadData(L"decal_ps.cso");
@@ -1193,16 +1160,7 @@ void Game::CreateWindowSizeDependentResources()
     device->CreateRenderTargetView(rtTexture2.Get(), nullptr, m_rt2RTV.ReleaseAndGetAddressOf());
     device->CreateShaderResourceView(rtTexture2.Get(), nullptr, m_rt2SRV.ReleaseAndGetAddressOf());
 
-    // Another FULL SIZE render target
-    ComPtr<ID3D11Texture2D> rtTexture3;
-    device->CreateTexture2D(&sceneDesc, nullptr, rtTexture3.ReleaseAndGetAddressOf());
-    device->CreateRenderTargetView(rtTexture3.Get(), nullptr, m_rt3RTV.ReleaseAndGetAddressOf());
-    device->CreateShaderResourceView(rtTexture3.Get(), nullptr, m_rt3SRV.ReleaseAndGetAddressOf());
-
-
-    // Decal volume
-    m_volumeDecal->SetPixelSize(m_deviceResources->GetD3DDeviceContext(), viewport.Width, viewport.Height);
-
+    // Copy of depth-stencil so that it can be sampled while also doing depth tests
     device->CreateTexture2D(&m_deviceResources->dsTexDesc, nullptr, m_depthStencilTexCopy.ReleaseAndGetAddressOf());
     device->CreateShaderResourceView(m_depthStencilTexCopy.Get(), &m_deviceResources->srvDesc, m_depthStencilSRVCopy.ReleaseAndGetAddressOf());
 }

@@ -18,9 +18,6 @@
 #include "HighlightEffect.h"
 #include "PostProcess.h"
 
-#include "DepthSampler.h"
-#include "VolumeDecal.h"
-
 // TODO: Sampling the depth buffer should ignore objects
 //       - If possible, DepthSampler could output depth to one channel, and stencil value in another--then I could check stencil values on the CPU
 
@@ -113,57 +110,56 @@ private:
     auto GetDisplayListIteratorFromID(int id);
     auto GetDisplayListIteratorFromID(int id) const;
 
-	//tool specific
+	//// tool specific
 	std::vector<DisplayObject>			m_displayList;
 	DisplayChunk						m_displayChunk;
 	InputCommands						inputCommands;
     
+	// terrain manipulation brush
     bool m_showTerrainBrush = false;
     float m_brushSize = 0.f;
 
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssWriteSelectedObject;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssNotEqSelectedObject;
+	__declspec(align(16))
+		struct DecalMatrixBuffer
+	{
+		XMMATRIX invViewProjection;
+		XMMATRIX worldToProjectorClip;
+	} m_decalMatrices;
 
-    // Special DSS for rendering the terrain, since I want what m_dssWriteSelectedObject does PLUS I want depth testing on
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssWriteTerrain;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dssEqTerrain;
+	ConstantBuffer<DecalMatrixBuffer> m_decalMatrixBuffer;
+	XMFLOAT4X4 m_projectorView, m_projectorProjection;
 
-    Microsoft::WRL::ComPtr<ID3D11BlendState>                                m_terrainDecalBlendState;
+	enum DSS_Type
+	{
+		DSS_WRITE_SELECTED_OBJECT,
+		DSS_NOT_EQ_SELECTED_OBJECT,
+		DSS_WRITE_TERRAIN,
+		DSS_EQ_TERRAIN,
+		DSS_COUNT
+	};
 
-    // Terrain brush shenanigans (that did not work--GPU Pro 2 Volume Decal)
-    std::unique_ptr<DepthSampler>                                           m_depthSampler;
-    std::unique_ptr<VolumeDecal>                                            m_volumeDecal;
-    Microsoft::WRL::ComPtr<ID3D11InputLayout>                               m_volumeDecalInputLayout;
-    std::unique_ptr<DirectX::GeometricPrimitive>                            m_decalCube;
+    // DSSes for writing/testing terrain and selected objects to/in stencil buffer
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>							m_dss[DSS_COUNT];
 
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_brushMarkerDecalSRV;
-    Microsoft::WRL::ComPtr<ID3D11SamplerState>                              m_linearBorderSS;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_brushDecalTextureSRV;
 
+	// Need copy of depth-stencil buffer to perform depth test whole sampling when rendering brush decal
     Microsoft::WRL::ComPtr<ID3D11Texture2D>                                 m_depthStencilTexCopy;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_depthStencilSRVCopy;
 
     Microsoft::WRL::ComPtr<ID3D11PixelShader>                               m_decalPixelShader;
 
-    __declspec(align(16))
-        struct DecalMatrixBuffer
-    {
-        XMMATRIX invViewProjection;
-        XMMATRIX worldToProjectorClip;
-    } m_decalMatrices;
-
-    XMFLOAT4X4 m_projectorView, m_projectorProjection;
-
-    ConstantBuffer<DecalMatrixBuffer>                                       m_decalMatrixBuffer;
-
-
     // Selection highlighting
-	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
-	std::map<std::wstring, std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>>		m_highlightEffectLayouts;
+	using InputLayouts = std::vector<Microsoft::WRL::ComPtr<ID3D11InputLayout>>;
+
 	std::vector<int> m_selectionIDs;
+	std::unique_ptr<HighlightEffect>									    m_highlightEffect;
+	std::map<std::wstring, InputLayouts>									m_highlightEffectLayouts;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>						m_selectionBoxTexture;
 
     //// Render targets and post process stuff
+	// Views for highlight render texture
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_highlightSRV;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_highlightRTV;
 
@@ -174,18 +170,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_rt2SRV;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_rt2RTV;
 
+	// Effect for performing post-process
     std::unique_ptr<DirectX::BasicPostProcess>                              m_blurPostProcess;
-
-
-    // Another render target (sheesh) for doing projective texturing on the terrain
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>                          m_rt3RTV;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_rt3SRV;
-
-	// Basic effect without vertex colours
-	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPosition>>		m_pivotBatch;
-	std::unique_ptr<DirectX::BasicEffect>									m_pivotEffect;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout>								m_pivotInputLayout;
-	Microsoft::WRL::ComPtr<ID3D11GeometryShader>							m_pivotGeometryShader;
 
 	//control variables
 	bool m_grid;							//grid rendering on / off
