@@ -207,6 +207,8 @@ void Game::Update(DX::StepTimer const& timer)
 
 void Game::RenderSceneGraph(ID3D11DeviceContext * context, FXMMATRIX view, CXMMATRIX projection)
 {
+	const XMVECTOR zero = XMVectorZero();
+
     for (auto itModel = m_displayList.cbegin(); itModel != m_displayList.cend(); ++itModel)
     {
         auto model = itModel->m_model;
@@ -221,7 +223,7 @@ void Game::RenderSceneGraph(ID3D11DeviceContext * context, FXMMATRIX view, CXMMA
                                                                          XMConvertToRadians(itModel->m_orientation.x),
                                                                          XMConvertToRadians(itModel->m_orientation.z));
 
-        XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, SimpleMath::Quaternion::Identity, scale, g_XMZero, rotate, translate);
+        XMMATRIX local = m_world * XMMatrixTransformation(zero, SimpleMath::Quaternion::Identity, scale, zero, rotate, translate);
 
         // First, render object normally
         model->Draw(context, *m_states, local, view, projection, false);	// second to last variable in draw,  make TRUE for wireframe
