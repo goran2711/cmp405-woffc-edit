@@ -372,8 +372,8 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
                                                                 m_d3dDepthStencilShaderResourceView.ReleaseAndGetAddressOf()
         ));
 
-        dsTexDesc = depthStencilDesc;
-        srvDesc = depthStencilSRVDesc;
+        m_dsTexDesc = depthStencilDesc;
+        m_dsSRVDesc = depthStencilSRVDesc;
     }
     
     // Set the 3D rendering viewport to target the entire window.

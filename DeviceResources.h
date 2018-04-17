@@ -50,6 +50,8 @@ namespace DX
         DXGI_FORMAT                 GetDepthBufferFormat() const                { return m_depthBufferFormat; }
         D3D11_VIEWPORT              GetScreenViewport() const                   { return m_screenViewport; }
         UINT                        GetBackBufferCount() const                  { return m_backBufferCount; }
+		D3D11_TEXTURE2D_DESC		GetDepthStencilTextureDesc() const			{ return m_dsTexDesc; }
+		D3D11_SHADER_RESOURCE_VIEW_DESC GetDepthStencilSRVDesc() const			{ return m_dsSRVDesc; }
 
         // Performance events
         void PIXBeginEvent(_In_z_ const wchar_t* name)
@@ -76,8 +78,6 @@ namespace DX
             }
         }
 
-        D3D11_TEXTURE2D_DESC dsTexDesc;
-        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
     private:
         void GetHardwareAdapter(IDXGIAdapter1** ppAdapter);
 
@@ -89,6 +89,9 @@ namespace DX
         Microsoft::WRL::ComPtr<IDXGISwapChain>          m_swapChain;
         Microsoft::WRL::ComPtr<IDXGISwapChain1>         m_swapChain1;
         Microsoft::WRL::ComPtr<ID3DUserDefinedAnnotation> m_d3dAnnotation;
+
+        D3D11_TEXTURE2D_DESC							m_dsTexDesc;
+        D3D11_SHADER_RESOURCE_VIEW_DESC					m_dsSRVDesc;
 
         // Direct3D rendering objects. Required for 3D.
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_d3dRenderTargetView;

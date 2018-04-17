@@ -1149,8 +1149,8 @@ void Game::CreateWindowSizeDependentResources()
     device->CreateShaderResourceView(rtTexture2.Get(), nullptr, m_rt2SRV.ReleaseAndGetAddressOf());
 
     // Copy of depth-stencil so that it can be sampled while also doing depth tests
-    device->CreateTexture2D(&m_deviceResources->dsTexDesc, nullptr, m_depthStencilTexCopy.ReleaseAndGetAddressOf());
-    device->CreateShaderResourceView(m_depthStencilTexCopy.Get(), &m_deviceResources->srvDesc, m_depthStencilSRVCopy.ReleaseAndGetAddressOf());
+    device->CreateTexture2D(&m_deviceResources->GetDepthStencilTextureDesc(), nullptr, m_depthStencilTexCopy.ReleaseAndGetAddressOf());
+    device->CreateShaderResourceView(m_depthStencilTexCopy.Get(), &m_deviceResources->GetDepthStencilSRVDesc(), m_depthStencilSRVCopy.ReleaseAndGetAddressOf());
 }
 
 void Game::OnDeviceLost()
@@ -1178,7 +1178,6 @@ void Game::OnDeviceRestored()
 
 std::wstring StringToWCHART(std::string s)
 {
-
 	int len;
 	int slength = (int) s.length() + 1;
 	len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
