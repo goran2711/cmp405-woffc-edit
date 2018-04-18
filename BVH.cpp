@@ -14,7 +14,6 @@
 
 namespace
 {
-    // Have to add/subtract one to get around some overflow(?) weirdness
     const XMVECTOR MAX = XMVectorSplatOne() * std::numeric_limits<float>::max();
     const XMVECTOR MIN = XMVectorSplatOne() * std::numeric_limits<float>::lowest();
 }
