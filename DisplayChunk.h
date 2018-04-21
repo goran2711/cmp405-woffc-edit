@@ -32,7 +32,7 @@ public:
 	ID3D11ShaderResourceView *					m_texture_diffuse;				//diffuse texture
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>   m_terrainInputLayout;
 
-    bool XM_CALLCONV CursorIntersectsTerrain(long mouseX, long mouseY, const DirectX::SimpleMath::Viewport& viewport, DirectX::FXMMATRIX projection, DirectX::CXMMATRIX view, DirectX::CXMMATRIX world, DirectX::XMVECTOR& wsCoord) const;
+    bool XM_CALLCONV CursorIntersectsTerrain(DirectX::FXMVECTOR origin, long mouseX, long mouseY, D3D11_VIEWPORT viewport, DirectX::FXMMATRIX projection, DirectX::CXMMATRIX view, DirectX::CXMMATRIX world, DirectX::XMVECTOR& wsCoord) const;
 
 private:
     void CalculateTerrainNormals();

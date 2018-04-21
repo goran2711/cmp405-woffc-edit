@@ -243,22 +243,17 @@ void DisplayChunk::RefitBVH()
     m_bvh.Refit();
 }
 
-bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(long mouseX, long mouseY, const SimpleMath::Viewport & viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord) const
+bool XM_CALLCONV DisplayChunk::CursorIntersectsTerrain(FXMVECTOR origin, long mouseX, long mouseY, D3D11_VIEWPORT viewport, FXMMATRIX projection, CXMMATRIX view, CXMMATRIX world, XMVECTOR& wsCoord) const
 {
     // Create ray
-    Vector3 nearPoint(mouseX, mouseY, 0.f);
-    Vector3 farPoint(mouseX, mouseY, 1.f);
-    Vector3 nearPointUnprojected = viewport.Unproject(nearPoint, projection, view, world);
-    Vector3 farPointUnprojected = viewport.Unproject(farPoint, projection, view, world);
+    XMVECTOR farPoint = XMVectorSet(mouseX, mouseY, 0.f, 1.f);
+    farPoint = XMVector3Unproject(farPoint, viewport.TopLeftX, viewport.TopLeftY, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, projection, view, world);
 
-    Vector3 direction(farPointUnprojected - nearPointUnprojected);
-    direction.Normalize();
-
-    Ray ray(nearPointUnprojected, direction);
+    XMVECTOR direction = XMVector3Normalize(farPoint - origin);
 
     // Query BVH
-    Vector3 hit;
-    if (m_bvh.Intersects(ray, hit))
+    XMVECTOR hit;
+    if (m_bvh.Intersects(origin, direction, hit))
     {
         wsCoord = hit;
         return true;

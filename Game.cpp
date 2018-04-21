@@ -951,7 +951,8 @@ bool Game::PickWithinScreenRectangle(RECT selectionRect, std::vector<int>& selec
 
 bool Game::CursorIntersectsTerrain(long cursorX, long cursorY, DirectX::XMVECTOR & wsCoord)
 {
-    return m_displayChunk.CursorIntersectsTerrain(cursorX, cursorY, SimpleMath::Viewport(m_deviceResources->GetScreenViewport()), m_projection, m_view, m_world, wsCoord);
+    const XMVECTOR origin = m_camera.GetPosition();
+    return m_displayChunk.CursorIntersectsTerrain(origin, cursorX, cursorY, m_deviceResources->GetScreenViewport(), m_projection, m_view, m_world, wsCoord);
 }
 
 void Game::ShowBrushDecal(bool val)

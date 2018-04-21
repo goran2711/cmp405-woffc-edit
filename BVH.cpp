@@ -18,15 +18,15 @@ namespace
     const XMVECTOR MIN = XMVectorSplatOne() * std::numeric_limits<float>::lowest();
 }
 
-bool BVH::Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const
+bool BVH::Intersects(FXMVECTOR origin, FXMVECTOR direction, XMVECTOR& hit) const
 {
     float dist;
-    if (!ray.Intersects(m_root->bounds, dist))
+    if (!m_root->bounds.Intersects(origin, direction, dist))
         return false;
 
-    if (Intersects(*m_root, ray, dist))
+    if (Intersects(*m_root, origin, direction, dist))
     {
-        hit = ray.position + (ray.direction * dist);
+        hit = origin + (direction * dist);
         return true;
     }
 
@@ -154,10 +154,10 @@ void BVH::Partition(BVHNode& node)
     childR.bounds = CalculateBounds(childR.leftFirst, childR.count);
 }
 
-bool BVH::Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dist) const
+bool BVH::Intersects(const BVHNode& node, FXMVECTOR origin, FXMVECTOR direction, float& dist) const
 {
     float tempDist;
-    if (!ray.Intersects(node.bounds, tempDist))
+    if (!node.bounds.Intersects(origin, direction, tempDist))
         return false;
 
     dist = std::numeric_limits<float>::max();
@@ -169,7 +169,11 @@ bool BVH::Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dis
         {
             const Triangle& triangle = m_primitives[node.leftFirst + i];
 
-            if (ray.Intersects(*triangle.v[0], *triangle.v[1], *triangle.v[2], tempDist))
+            XMVECTOR t0 = XMLoadFloat3(triangle.v[0]);
+            XMVECTOR t1 = XMLoadFloat3(triangle.v[1]);
+            XMVECTOR t2 = XMLoadFloat3(triangle.v[2]);
+
+            if (TriangleTests::Intersects(origin, direction, t0, t1, t2, tempDist))
             {
                 if (tempDist < dist)
                     dist = tempDist;
@@ -180,13 +184,13 @@ bool BVH::Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dis
     else
     {
         // Check for intersection with children
-        if (Intersects(m_pool[node.leftFirst + 0], ray, tempDist))
+        if (Intersects(m_pool[node.leftFirst + 0], origin, direction, tempDist))
         {
             if (tempDist < dist)
                 dist = tempDist;
         }
 
-        if (Intersects(m_pool[node.leftFirst + 1], ray, tempDist))
+        if (Intersects(m_pool[node.leftFirst + 1], origin, direction, tempDist))
         {
             if (tempDist < dist)
                 dist = tempDist;

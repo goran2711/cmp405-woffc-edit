@@ -118,7 +118,7 @@ public:
         InitialiseNodes(m_primitives.size());
     }
 
-    bool Intersects(const SimpleMath::Ray& ray, SimpleMath::Vector3& hit) const;
+    bool XM_CALLCONV Intersects(DirectX::FXMVECTOR origin, DirectX::FXMVECTOR direction, DirectX::XMVECTOR& hit) const;
 
     void Refit();
 
@@ -133,7 +133,7 @@ private:
     void Subdivide(BVHNode& node, int depth = 0);
     void Partition(BVHNode& node);
 
-    bool Intersects(const BVHNode& node, const SimpleMath::Ray& ray, float& dist) const;
+    bool XM_CALLCONV Intersects(const BVHNode& node, DirectX::FXMVECTOR origin, DirectX::FXMVECTOR direction, float& dist) const;
 
     void Refit(BVHNode& node);
 
