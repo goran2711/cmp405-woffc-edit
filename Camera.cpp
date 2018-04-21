@@ -4,15 +4,6 @@
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
-namespace
-{
-	template<typename T>
-	inline T clamp(const T& val, const T& min, const T& max)
-	{
-		return (val > max ? max : (val < min ? min : val));
-	}
-}
-
 void Camera::Update(const InputCommands & inputCommands)
 {
 	if (inputCommands.rotRight)
@@ -26,7 +17,10 @@ void Camera::Update(const InputCommands & inputCommands)
 
 	m_rotation.y += inputCommands.mouseDX;
 	m_rotation.x += inputCommands.mouseDY;
-	m_rotation.x = clamp(m_rotation.x, -89.f, 89.f);
+
+    // Avoid gimbal lock
+    m_rotation.x = std::min(m_rotation.x, +89.f);
+    m_rotation.x = std::max(m_rotation.x, -89.f);
 
 	//create look direction from Euler angles in m_camOrientation	
 	float cosY = cosf(XMConvertToRadians(m_rotation.y));
