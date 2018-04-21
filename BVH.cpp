@@ -92,15 +92,11 @@ BoundingBox BVH::CalculateBounds(int first, int count) const
 
 void BVH::Subdivide(BVHNode& node, int depth)
 {
-    // NOTE: Exit condition: stop subdividing if this new leaf has a minimum number of primitives
-    //       (can also add if we reached a certain depth)
-    // BUG: Stack overflow with nodes that have .count == 2 and don't split before depth > 20
-    // FIX: Very suceptible to stack overflows at the moment--a better splitting strategy may help
+    // FIX: Very suceptible to stack overflows at the moment--needs more robust splitting strategy
     if (node.count < 4 || depth > 16)
         return;
 
-    // Partiton node (creates its two children)
-    // NOTE: Partition turns the node into an internal node
+    // Partiton node (creates its two children); node becomes internal node
     Partition(node);
 
     // Subdivide node's children
@@ -119,7 +115,7 @@ void BVH::Partition(BVHNode& node)
     XMVECTOR splitPos = XMLoadFloat3(&node.bounds.Center);
 
     // In this case heuristic just splits 50/50 along the largest axis
-    // NOTE: This could probably be done much better
+    // NOTE: There are other ways of splitting that produce more efficient hierarchies
     float extentX = node.bounds.Extents.x;
     float extentY = node.bounds.Extents.y;
     float extentZ = node.bounds.Extents.z;
@@ -134,7 +130,7 @@ void BVH::Partition(BVHNode& node)
             center += XMLoadFloat3(triangle.v[j]);
         center /= 3;
         
-        // If triangle is on the left of the split position, is belongs to the left child, otherwise it belongs to the right child
+        // Determine which child (left/right) this primitive(triangle) belongs to
         return center.m128_f32[splitAxis] < splitPos.m128_f32[splitAxis];
     });
 
