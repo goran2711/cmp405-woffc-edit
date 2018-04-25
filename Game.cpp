@@ -825,73 +825,7 @@ bool Game::PickWithinScreenRectangle(RECT selectionRect, std::vector<int>& selec
 	if (mode == PICK_NORMAL)
 		selections.clear();
 
-	//// EXPERIMENT: Skewed picking frustum (convert selection box to view space?)
-	//XMVECTOR topLeftNear		=	XMVectorSet(selectionRect.left, selectionRect.top, 0.f, 1.f);
-	//XMVECTOR bottomLeftNear		=	XMVectorSet(selectionRect.left, selectionRect.bottom, 0.f, 1.f);
-	//XMVECTOR topRightNear		=	XMVectorSet(selectionRect.right, selectionRect.top, 0.f, 1.f);
-	//XMVECTOR bottomRightNear	=	XMVectorSet(selectionRect.right, selectionRect.bottom, 0.f, 1.f);
-
-	////XMVECTOR topLeftFar			=	XMVectorSet(selectionRect.left, selectionRect.top, 1.f, 1.f);
-	////XMVECTOR bottomLeftFar		=	XMVectorSet(selectionRect.left, selectionRect.bottom, 1.f, 1.f);
-	////XMVECTOR topRightFar		=	XMVectorSet(selectionRect.right, selectionRect.top, 1.f, 1.f);
-	////XMVECTOR bottomRightFar		=	XMVectorSet(selectionRect.right, selectionRect.bottom, 1.f, 1.f);
-
-	//const XMMATRIX identity = XMMatrixIdentity();
-	//topLeftNear		= XMVector3Unproject(topLeftNear, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-	//bottomLeftNear	= XMVector3Unproject(bottomLeftNear, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-	//topRightNear	= XMVector3Unproject(topRightNear, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-	//bottomRightNear	= XMVector3Unproject(bottomRightNear, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-
-	////topLeftFar		= XMVector3Unproject(topLeftFar, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-	////bottomLeftFar	= XMVector3Unproject(bottomLeftFar, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-	////topRightFar		= XMVector3Unproject(topRightFar, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-	////bottomRightFar	= XMVector3Unproject(bottomRightFar, 0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, identity, identity);
-
-	//XMMATRIX pickingMatrix = XMMatrixPerspectiveOffCenterRH(
-	//	XMVectorGetX(topLeftNear),
-	//	XMVectorGetX(bottomRightNear),
-	//	XMVectorGetY(bottomRightNear),
-	//	XMVectorGetY(topRightNear),
-	//	0.01f, 1000.f
-	//);
-
-	//BoundingFrustum pickingFrustum;
-	//BoundingFrustum::CreateFromMatrix(pickingFrustum, pickingMatrix);
-	//
-	//// Iterate over every model in the scene (inefficient)
-	//for (auto itModel = m_displayList.cbegin(); itModel != m_displayList.cend(); ++itModel)
-	//{
-	//	auto model = itModel->m_model;
-	//	assert(model != 0);
-
-	//	// calculate world (local) matrix
-	//	const XMVECTORF32 scale = { itModel->m_scale.x, itModel->m_scale.y, itModel->m_scale.z };
-	//	const XMVECTORF32 translate = { itModel->m_position.x, itModel->m_position.y, itModel->m_position.z };
-
-	//	//convert degrees into radians for rotation matrix
-	//	XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(XMConvertToRadians(itModel->m_orientation.y),
-	//														 XMConvertToRadians(itModel->m_orientation.x),
-	//														 XMConvertToRadians(itModel->m_orientation.z));
-
-	//	SimpleMath::Matrix local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
-
-	//	for (auto itMesh = model->meshes.cbegin(); itMesh != model->meshes.cend(); ++itMesh)
-	//	{
-	//		auto mesh = *itMesh;
-
-	//		auto meshBB = mesh->boundingBox;
-
-	//		meshBB.Transform(meshBB, local * m_view);
-
-	//		if (pickingFrustum.Contains(meshBB))
-	//		{
-	//			selections.push_back(itModel->m_ID);
-	//		}
-	//	}
-	//}
-
-	////////////////////////////////////////////////////////////////////////
-	// EXPERIMENT: Create a screen space bounding box for the selection box
+	// Create a screen space bounding box for the selection box
 	XMVECTOR topLeftNear = XMVectorSet(selectionRect.left, selectionRect.top, 0.f, 1.f);
 	XMVECTOR bottomRightFar = XMVectorSet(selectionRect.right, selectionRect.bottom, 1.f, 1.f);
 
