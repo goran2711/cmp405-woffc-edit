@@ -536,8 +536,11 @@ bool XM_CALLCONV Game::CreateScreenSpaceBoundingBox(const DirectX::BoundingBox &
 						   0.f, 0.f, viewport.Width, viewport.Height, 0.f, 1.f, m_projection, m_view, local);
 
 	std::vector<XMVECTOR> corners(8);
-	for (int i = 0; i < corners.size(); ++i)
-		corners[i] = XMLoadFloat3(&projectedCornerStream[i]);
+    std::transform(projectedCornerStream, projectedCornerStream + 8, corners.begin(),
+    [](const XMFLOAT3& corner)
+    {
+        return XMLoadFloat3(&corner);
+    });
 
 	m_deviceResources->PIXEndEvent();
 
