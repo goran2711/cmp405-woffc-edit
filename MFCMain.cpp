@@ -151,24 +151,19 @@ void MFCMain::MenuEditSelect()
 
 void MFCMain::MenuEditTransform()
 {
-    using namespace std::placeholders;
-
     if (m_ToolSystem.m_selectedObjects.empty())
-    {
         MessageBox(m_toolHandle, L"No object selected", L"Error", MB_OK);
-        return;
-    }
 	else if (m_ToolSystem.m_selectedObjects.size() > 1)
-	{
 		MessageBox(m_toolHandle, L"Can only manipulate one object at a time", L"Error", MB_OK);
-		return;
-	}
+    else
+    {
+        m_transformDialogue.Create(IDD_DIALOG_TRANSFORM);
+        m_transformDialogue.ShowWindow(SW_SHOW);
 
-    m_transformDialogue.Create(IDD_DIALOG_TRANSFORM);
-    m_transformDialogue.ShowWindow(SW_SHOW);
-
-    SceneObject* object = m_ToolSystem.GetObjectFromID(m_ToolSystem.getCurrentSelectionIDs().front());
-    m_transformDialogue.SetSceneObject(object);
+        // Transform the first selected object (there should only ever be one selected)
+        SceneObject* object = m_ToolSystem.GetObjectFromID(m_ToolSystem.getCurrentSelectionIDs().front());
+        m_transformDialogue.SetSceneObject(object);
+    }
 }
 
 void MFCMain::ToolBarButton1()

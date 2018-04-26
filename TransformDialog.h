@@ -2,7 +2,6 @@
 #include "afxdialogex.h"
 #include "afxwin.h"
 #include "resource.h"
-#include <functional>
 
 // IDEAS: Make it rebuild display list when OK is pressed? Or whenever some 'Apply' button is pressed
 
