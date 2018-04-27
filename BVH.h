@@ -3,14 +3,10 @@
 #include <DirectXMath.h>
 #include <DirectXCollision.h>
 #include <VertexTypes.h>
-#include <SimpleMath.h>
-
-#include <vector>
-
 // For visualising BVH
 #include <GeometricPrimitive.h>
 
-using namespace DirectX;
+#include <vector>
 
 class BVH
 {
@@ -22,20 +18,20 @@ class BVH
         //   - Means I don't have to do any extra stuff (like updating BVHs vertex positions)
         //     when refitting the structure--just recalculate the internal node's AABBs
         // NOTE: Poor design, really.
-        Triangle(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2)
+        Triangle(const DirectX::XMFLOAT3& v0, const DirectX::XMFLOAT3& v1, const DirectX::XMFLOAT3& v2)
         {
             v[0] = &v0;
             v[1] = &v1;
             v[2] = &v2;
         }
 
-        const XMFLOAT3* v[3];
+        const DirectX::XMFLOAT3* v[3];
     };
 
     struct BVHNode
     {
         // The internal node's bounding box
-        BoundingBox bounds;
+        DirectX::BoundingBox bounds;
         // If count == 0: the internal node's left child
         //     otherwise: index of the leaf node's first primitive (triangle)
         uint32_t leftFirst;
@@ -47,13 +43,13 @@ public:
     BVH() = default;
 
     template <size_t numVertices>
-    BVH(const VertexPositionNormalTexture(&vertices)[numVertices])
+    BVH(const DirectX::VertexPositionNormalTexture(&vertices)[numVertices])
     {
         Initialise(vertices);
     }
 
     template <size_t numVertices>
-    void Initialise(const VertexPositionNormalTexture (&vertices)[numVertices])
+    void Initialise(const DirectX::VertexPositionNormalTexture (&vertices)[numVertices])
     {
         // Assuming square terrain
         const int dimensions = (int) std::sqrt(float(numVertices));
@@ -70,10 +66,10 @@ public:
 
                 // I don't expect terrainGeometry to move around in memory
                 // NOTE: Poor design
-                const XMFLOAT3& bottomLeft = vertices[index].position;
-                const XMFLOAT3& bottomRight = vertices[index + 1].position;
-                const XMFLOAT3& topRight = vertices[index + dimensions + 1].position;
-                const XMFLOAT3& topLeft = vertices[index + dimensions].position;
+                const DirectX::XMFLOAT3& bottomLeft = vertices[index].position;
+                const DirectX::XMFLOAT3& bottomRight = vertices[index + 1].position;
+                const DirectX::XMFLOAT3& topRight = vertices[index + dimensions + 1].position;
+                const DirectX::XMFLOAT3& topLeft = vertices[index + dimensions].position;
 
                 m_primitives.emplace_back(bottomLeft, bottomRight, topRight);
                 m_primitives.emplace_back(bottomLeft, topRight, topLeft);
@@ -88,12 +84,12 @@ public:
     void Refit();
 
     void InitialiseDebugVisualiastion(ID3D11DeviceContext* context);
-    void XM_CALLCONV DebugRender(ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int depth);
+    void XM_CALLCONV DebugRender(ID3D11DeviceContext* context, DirectX::FXMMATRIX view, DirectX::CXMMATRIX projection, int depth);
 
 private:
     void InitialiseNodes(size_t size);
 
-    BoundingBox CalculateBounds(int first, int count) const;
+    DirectX::BoundingBox CalculateBounds(int first, int count) const;
 
     void Subdivide(BVHNode& node, int depth = 0);
     void Partition(BVHNode& node);
@@ -102,7 +98,7 @@ private:
 
     void Refit(BVHNode& node);
 
-    void XM_CALLCONV DebugRender(BVHNode& node, ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection, int currentDepth, int depth);
+    void XM_CALLCONV DebugRender(BVHNode& node, ID3D11DeviceContext* context, DirectX::FXMMATRIX view, DirectX::CXMMATRIX projection, int currentDepth, int depth);
 
     // Node array
     BVHNode* m_root = nullptr;
@@ -114,6 +110,6 @@ private:
     std::vector<Triangle> m_primitives;
 
     // Debug visualisation stuff
-    std::unique_ptr<GeometricPrimitive> m_box;
+    std::unique_ptr<DirectX::GeometricPrimitive> m_box;
 };
 

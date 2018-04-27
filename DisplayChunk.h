@@ -14,7 +14,7 @@ public:
     static constexpr float TEXCOORD_STEP = 1.f / (TERRAINRESOLUTION - 1);
 
 	void PopulateChunkData(ChunkObject * SceneChunk);
-    void XM_CALLCONV RenderBatch(ID3D11DeviceContext* context, FXMMATRIX view, CXMMATRIX projection);
+    void XM_CALLCONV RenderBatch(ID3D11DeviceContext* context, DirectX::FXMMATRIX view, DirectX::CXMMATRIX projection);
     void InitialiseRendering(DX::DeviceResources* deviceResources);
     void InitialiseBatch();	//initial setup, base coordinates etc based on scale
     void LoadHeightMap(ID3D11Device* device);

@@ -12,6 +12,8 @@
 #undef max
 #endif
 
+using namespace DirectX;
+
 namespace
 {
     const XMVECTOR MAX = XMVectorSplatOne() * std::numeric_limits<float>::max();
