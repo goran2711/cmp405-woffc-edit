@@ -3,25 +3,6 @@
 
 class HighlightEffect : public CustomEffect
 {
-    // Helper stores matrix parameter values, and computes derived matrices.
-    struct EffectMatrices
-    {
-        EffectMatrices()
-        {
-            world = XMMatrixIdentity();
-            view = XMMatrixIdentity();
-            projection = XMMatrixIdentity();
-            worldView = XMMatrixIdentity();
-        }
-
-        XMMATRIX world;
-        XMMATRIX view;
-        XMMATRIX projection;
-        XMMATRIX worldView;
-
-        //void SetConstants(_Inout_ int& dirtyFlags, _Inout_ XMMATRIX& worldViewProjConstant);
-    };
-
 public:
     explicit HighlightEffect(_In_ ID3D11Device* device);
 
@@ -46,6 +27,23 @@ private:
 
     HighlightProperties m_highlightProperties;
     ConstantBuffer<HighlightProperties> m_propertiesBuffer;
+
+    // Helper stores matrix parameter values
+    struct EffectMatrices
+    {
+        EffectMatrices()
+        {
+            world = XMMatrixIdentity();
+            view = XMMatrixIdentity();
+            projection = XMMatrixIdentity();
+            worldView = XMMatrixIdentity();
+        }
+
+        XMMATRIX world;
+        XMMATRIX view;
+        XMMATRIX projection;
+        XMMATRIX worldView;
+    };
 
     EffectMatrices m_matrices;
     ConstantBuffer<EffectMatrices> m_matrixBuffer;
