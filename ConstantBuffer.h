@@ -3,6 +3,9 @@
 #include <wrl.h>
 #include <cassert>
 
+// NOTE: Implementation taken from https://github.com/Microsoft/DirectXTK/blob/a0dfe4d69746628f11788dce3d862d55a6604340/Src/ConstantBuffer.h
+//       Because NuGet version of DXTK does not include ConstantBuffer.h for some reason
+
 // Strongly typed wrapper around a D3D constant buffer.
 template<typename T>
 class ConstantBuffer
