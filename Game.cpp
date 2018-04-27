@@ -764,8 +764,6 @@ bool Game::RemoveDisplayListItem(int id)
 
     // TODO: Do something about the input layouts as well--if the last of a mesh type has been deleted,
     //       perhaps that input layout (for highlight effect) should be deleted also?
-    //       - Somehow utilise shared_ptr for this purpose?
-
     m_displayList.erase(it);
     return true;
 }

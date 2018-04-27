@@ -78,8 +78,7 @@ int MFCMain::Run()
 		{
 			auto selectionIDs = m_ToolSystem.getCurrentSelectionIDs();
 
-			// TODO: Deal with cases where _A LOT_ of object are selected (so many that we don't want to show all the IDs
-			//       in the status bar)
+			// TODO: Deal with cases where _A LOT_ of object are selected (so many that we don't want to show all the IDs in the status bar)
 			std::wstring statusString = L"Selected objects: ";
 			if (selectionIDs.empty())
 				statusString += L"none";

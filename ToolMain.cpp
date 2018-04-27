@@ -269,8 +269,11 @@ void ToolMain::Tick(MSG *msg)
         // Hide brush decal (in case it was visible)
         m_d3dRenderer.ShowBrushDecal(false);
 
-        // TODO: Make this more obvious
-        captureCursor(!m_cursorCaptured, (!m_cursorCaptured && m_captureCursorForCameraThisFrame));
+        // Cursor can be captured two ways:
+        // 1. To control the camera (press space)
+        // 2. To move an object (right click + drag)
+        bool captureForCamera = (!m_cursorCaptured && m_captureCursorForCameraThisFrame);
+        captureCursor(!m_cursorCaptured, captureForCamera);
 
         m_captureCursorThisFrame = false;
         m_captureCursorForCameraThisFrame = false;
@@ -373,7 +376,6 @@ void ToolMain::Tick(MSG *msg)
         m_toolInputCommands.selectionRectangleBegin = m_toolInputCommands.selectionRectangleEnd = { -1, -1 };
     }
 
-    // TODO: Come up with a better approach
     m_d3dRenderer.SetSelectionIDs(m_selectedObjects);
 
     //Renderer Update Call
@@ -631,9 +633,7 @@ bool ToolMain::UpdateInput(MSG * msg)
         m_captureCursorThisFrame = true;
         m_captureCursorForCameraThisFrame = true;
 
-        // TODO: INVESTIGATE
-        // Because for some reason WM_KEYUP doesn't seem to do the job?
-        //  Simulates KEY PRESS instead of KEY DOWN
+        // Simulates KEY PRESS instead of KEY DOWN
         m_keyArray[' '] = false;
     }
 

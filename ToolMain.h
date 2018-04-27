@@ -52,9 +52,6 @@ public:
     //variables
 	std::vector<SceneObject>    m_sceneGraph;	//our scenegraph storing all the objects in the current chunk
 
-    // TODO: Handle more than just deletion--prob need some custom structure to handle that ...
-    //       ... callback with pre-defined redo-functions, perhaps? (e.g. a struct that stores the items, and some
-    //       operator() that will put things back / restore, etc.
     std::vector<std::vector<SceneObject>>    m_deleteHistory;
     std::vector<std::vector<int>>            m_redoHistory;
 

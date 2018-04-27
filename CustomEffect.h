@@ -21,8 +21,6 @@ class CustomEffect : public IEffect, public IEffectMatrices
 public:
     CustomEffect(_In_ ID3D11Device* device, const std::wstring& vsFilename, const std::wstring& psFilename);
 
-    // TODO: Move/copy/destructors
-
     virtual ~CustomEffect() = default;
 
     // IEffect interface
