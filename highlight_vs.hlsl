@@ -3,7 +3,6 @@ cbuffer Matrices : register(b0)
     row_major matrix world;
     row_major matrix view;
     row_major matrix projection;
-    row_major matrix worldView;   // Improperly configured (DO NOT USE!)
 };
 
 struct VSInput

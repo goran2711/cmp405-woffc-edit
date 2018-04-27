@@ -36,13 +36,11 @@ private:
             world = XMMatrixIdentity();
             view = XMMatrixIdentity();
             projection = XMMatrixIdentity();
-            worldView = XMMatrixIdentity();
         }
 
         XMMATRIX world;
         XMMATRIX view;
         XMMATRIX projection;
-        XMMATRIX worldView;
     };
 
     EffectMatrices m_matrices;
