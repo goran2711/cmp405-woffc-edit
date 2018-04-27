@@ -173,5 +173,9 @@ void MFCMain::ToolBarButton1()
 
 void MFCMain::ToolBarToggleBrush()
 {
+#ifdef DEBUG
+    MessageBox(m_toolHandle, L"Terrain manipulation is slow in debug mode", L"Warning", MB_OK);
+#endif
+
     m_ToolSystem.ToggleBrush();
 }
