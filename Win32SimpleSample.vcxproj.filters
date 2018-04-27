@@ -74,9 +74,6 @@
     <ClCompile Include="BVH.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="DecalEffect.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="HighlightEffect.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
@@ -145,9 +142,6 @@
       <Filter>MFC</Filter>
     </ClInclude>
     <ClInclude Include="BVH.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="DecalEffect.h">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="HighlightEffect.h">
