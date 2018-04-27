@@ -2,7 +2,6 @@
 #include "InputCommands.h"
 
 using namespace DirectX;
-using namespace DirectX::SimpleMath;
 
 void Camera::Update(const InputCommands & inputCommands)
 {
