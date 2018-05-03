@@ -104,6 +104,7 @@ void Game::Initialize(HWND window, int width, int height)
     m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dss[DSS_WRITE_SELECTED_OBJECT].ReleaseAndGetAddressOf());
 
     // DSS for reading selected object from stencil buffer (pass if read value != STENCIL_SELECTED_OBJECT--makes stencil act as cutout)
+    dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
     dsDesc.StencilReadMask = STENCIL_SELECTED_OBJECT;
     dsDesc.StencilWriteMask = STENCIL_SELECTED_OBJECT;
 	dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
@@ -115,6 +116,7 @@ void Game::Initialize(HWND window, int width, int height)
 
     // DSS for writing terrain to stencil buffer
     dsDesc.DepthEnable = TRUE;
+    dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     dsDesc.StencilReadMask = STENCIL_TERRAIN;
     dsDesc.StencilWriteMask = STENCIL_TERRAIN;
     dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
@@ -125,6 +127,7 @@ void Game::Initialize(HWND window, int width, int height)
     m_deviceResources->GetD3DDevice()->CreateDepthStencilState(&dsDesc, m_dss[DSS_WRITE_TERRAIN].ReleaseAndGetAddressOf());
 
     // DSS for reading terrain from stencil buffer (pass if read value == STENCIL_TERRAIN--makes decal only appear on terrain)
+    dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
     dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
     dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
     dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
@@ -349,6 +352,8 @@ void Game::PostProcess(ID3D11DeviceContext* context)
         });
         m_sprites->Draw(m_rt2SRV.Get(), fullscreenRect);
         m_sprites->End();
+
+        context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
     }
 }
 #pragma endregion
